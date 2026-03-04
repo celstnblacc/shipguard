@@ -101,6 +101,13 @@ pinned==1.0.0
         findings = sc_002_unpinned_python_dep(path, content)
         assert len(findings) == 0
 
+    def test_sc_002_skips_empty_lines(self):
+        """Test that SC-002 skips blank lines."""
+        content = "requests\n\nflask==3.0.0"
+        path = Path("requirements.txt")
+        findings = sc_002_unpinned_python_dep(path, content)
+        assert len(findings) == 1
+
     def test_sc_002_skips_option_lines(self):
         """Test that SC-002 skips option lines."""
         content = "-r other.txt\n-i https://pypi.org/simple\nrequests"

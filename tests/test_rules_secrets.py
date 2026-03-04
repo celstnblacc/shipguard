@@ -3,7 +3,12 @@
 from pathlib import Path
 
 from reposec.models import Severity
-from reposec.rules.secrets import sec_001_aws_key, sec_002_gcp_key, sec_003_github_token
+from reposec.rules.secrets import (
+    _skip_false_positive,
+    sec_001_aws_key,
+    sec_002_gcp_key,
+    sec_003_github_token,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "secrets"
 
@@ -75,6 +80,13 @@ class TestSec002GcpKey:
         findings = sec_002_gcp_key(path, content)
         assert len(findings) == 0
 
+    def test_sec_002_skips_angle_bracket_template(self):
+        """Test that SEC-002 skips angle-bracket templates."""
+        content = "gcp_key: <API_KEY_PLACEHOLDER>"
+        path = Path("test.yml")
+        findings = sec_002_gcp_key(path, content)
+        assert len(findings) == 0
+
 
 class TestSec003GitHubToken:
     def test_sec_003_detects_ghp_token(self):
@@ -137,3 +149,7 @@ class TestSecretsFixtures:
             assert len(aws_findings) == 0
             assert len(gcp_findings) == 0
             assert len(github_findings) == 0
+
+
+def test_skip_false_positive_angle_brackets():
+    assert _skip_false_positive("token=<SECRET>") is True

@@ -1,0 +1,28 @@
+# RepoSec Security Report
+
+## Summary
+
+- **Files scanned:** 3
+- **Total findings:** 2
+- **Critical:** 1
+- **High:** 1
+- **Medium:** 0
+- **Low:** 0
+- **Duration:** 1.23s
+
+## CRITICAL (1)
+
+| Rule | File | Line | Message |
+|------|------|------|---------|
+| PY-003 | `src/app.py` | 10 | eval() can execute arbitrary code if input is untrusted |
+
+## HIGH (1)
+
+| Rule | File | Line | Message |
+|------|------|------|---------|
+| SEC-001 | `config/secrets.env` | 2 | AWS access key ID detected in file |
+
+## Fix Hints
+
+- **PY-003**: Replace eval() with ast.literal_eval() or a safe parser
+- **SEC-001**: Remove the key and rotate it in AWS IAM; use environment variables instead

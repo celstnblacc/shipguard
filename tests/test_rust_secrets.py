@@ -50,6 +50,15 @@ class TestRunRustSecretsScan:
         findings = run_rust_secrets_scan([tmp_path / "secrets.yml"], tmp_path)
         assert findings == []
 
+    def test_returns_empty_when_subprocess_raises(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: "/bin/reposec-secrets")
+        monkeypatch.setattr(
+            "subprocess.run",
+            lambda *args, **kwargs: (_ for _ in ()).throw(OSError("boom")),
+        )
+        findings = run_rust_secrets_scan([tmp_path / "secrets.yml"], tmp_path)
+        assert findings == []
+
     def test_returns_empty_on_invalid_json(self, tmp_path, monkeypatch):
         monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: "/bin/reposec-secrets")
         monkeypatch.setattr(

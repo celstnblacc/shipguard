@@ -32,7 +32,7 @@ dependencies = [
 reposec = "reposec.cli:app"
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "pytest-cov"]
+dev = ["pytest>=7.0", "pytest-cov", "hypothesis>=6.0"]
 
 [project.entry-points."reposec.rules"]
 # Third-party rule packages register here
@@ -42,3 +42,7 @@ packages = ["src/reposec"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "performance: performance regression tests (usually gated by env var)",
+    "mutation: mutation test harness tests (usually gated by env var)",
+]

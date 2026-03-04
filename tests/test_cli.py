@@ -49,6 +49,15 @@ class TestScanCommand:
         assert out.exists()
         assert '"findings"' in out.read_text()
 
+    def test_scan_output_file_terminal_format(self, tmp_path):
+        out = tmp_path / "report.txt"
+        result = runner.invoke(
+            app, ["scan", str(FIXTURES), "--format", "terminal", "--output", str(out)]
+        )
+        assert result.exit_code == 1
+        assert out.exists()
+        assert "Security Findings" in out.read_text()
+
     def test_scan_invalid_severity(self):
         result = runner.invoke(app, ["scan", str(FIXTURES), "--severity", "bogus"])
         assert result.exit_code == 1
