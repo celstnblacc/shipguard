@@ -1,0 +1,17 @@
+# Repo-level scan profile for the RepoSec codebase itself.
+# Excludes intentional vulnerable fixtures and rule-definition text to keep
+# local `reposec scan .` output focused on actionable findings.
+
+severity_threshold: medium
+
+exclude_paths:
+  - "vendor/**"
+  - "node_modules/**"
+  - "tests/**"
+  - "docs/**"
+  - "src/reposec/rules/**"
+  - "rust/**"
+
+disable_rules: []
+custom_rules_dirs: []
+use_rust_secrets: false
