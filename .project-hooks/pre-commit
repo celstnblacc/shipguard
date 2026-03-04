@@ -4,14 +4,22 @@
 
 echo "🧪 Running RepoSec tests..."
 
-# Check if pytest is available
-if ! command -v pytest &> /dev/null; then
+# Resolve pytest command with virtualenv-first behavior.
+PYTEST_CMD=""
+if [ -x ".venv/bin/pytest" ]; then
+    PYTEST_CMD=".venv/bin/pytest"
+elif command -v pytest >/dev/null 2>&1; then
+    PYTEST_CMD="pytest"
+elif command -v python3 >/dev/null 2>&1 && python3 -m pytest --version >/dev/null 2>&1; then
+    PYTEST_CMD="python3 -m pytest"
+else
     echo "⚠️  pytest not found - skipping test check"
     echo "   Install with: pip install -e '.[dev]'"
     exit 0
 fi
 
-pytest tests/ -v
+echo "Using test runner: $PYTEST_CMD"
+$PYTEST_CMD tests/ -q
 
 if [ $? -eq 0 ]; then
     echo "✅ All tests passed"

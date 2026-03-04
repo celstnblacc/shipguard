@@ -11,12 +11,12 @@ repos:
     hooks:
       - id: reposec
         name: RepoSec SAST Scanner
-        entry: bash -c 'which reposec > /dev/null && reposec scan || echo "reposec not installed, skipping"'
+        entry: bash -c 'which reposec > /dev/null && reposec scan . --config .reposec-precommit.yml || echo "reposec not installed, skipping"'
         language: system
         types: [text]
         pass_filenames: false
         stages: [commit]
-        exclude: ^tests/fixtures/(secrets|supply_chain)/
+        exclude: ^tests/
 
   # General code quality
   - repo: https://github.com/pre-commit/pre-commit-hooks

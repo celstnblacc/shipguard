@@ -1,0 +1,13 @@
+severity_threshold: high
+
+exclude_paths:
+  - "tests/**"
+  - "docs/**"
+  - "src/reposec/rules/**"
+  - "rust/**"
+  - ".venv/**"
+  - "venv/**"
+
+disable_rules: []
+custom_rules_dirs: []
+use_rust_secrets: false
