@@ -30,6 +30,10 @@ disable_rules: []
 
 # Additional directories containing custom rule modules
 custom_rules_dirs: []
+
+# Optional: use Rust-accelerated secrets scanning (SEC-001/002/003)
+# Requires a built `reposec-secrets` binary in PATH or REPOSEC_RUST_SECRETS_BIN.
+use_rust_secrets: false
 """
 
 
@@ -40,6 +44,7 @@ class Config(BaseModel):
     exclude_paths: list[str] = Field(default_factory=list)
     disable_rules: list[str] = Field(default_factory=list)
     custom_rules_dirs: list[str] = Field(default_factory=list)
+    use_rust_secrets: bool = Field(default=False)
 
 
 def find_config(target_dir: Path) -> Path | None:

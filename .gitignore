@@ -31,6 +31,10 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Rust
+target/
+rust/**/target/
+
 # Secrets
 .env
 .env.*

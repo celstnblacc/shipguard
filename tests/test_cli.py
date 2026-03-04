@@ -58,6 +58,10 @@ class TestScanCommand:
         assert result.exit_code == 1
         assert "Unknown format" in result.output
 
+    def test_scan_accepts_rust_secrets_flag(self):
+        result = runner.invoke(app, ["scan", str(FIXTURES), "--rust-secrets", "--format", "json"])
+        assert result.exit_code == 1
+
 
 class TestListRulesCommand:
     def test_list_rules_terminal(self):

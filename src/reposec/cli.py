@@ -58,10 +58,17 @@ def scan_cmd(
     config_file: Optional[Path] = typer.Option(
         None, "--config", "-c", help="Path to config file.",
     ),
+    rust_secrets: Optional[bool] = typer.Option(
+        None,
+        "--rust-secrets/--no-rust-secrets",
+        help="Use optional Rust-accelerated secrets scanning for SEC-* rules.",
+    ),
 ) -> None:
     """Scan a directory for security vulnerabilities."""
     format = format.lower()
     config = load_config(config_path=config_file, target_dir=path)
+    if rust_secrets is not None:
+        config.use_rust_secrets = rust_secrets
 
     threshold = None
     if severity:

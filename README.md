@@ -69,6 +69,9 @@ reposec scan .
 # Scan with JSON output (for CI pipelines)
 reposec scan . --format json
 
+# Optional: enable Rust-accelerated secrets scanning
+reposec scan . --rust-secrets
+
 # Only show critical and high findings
 reposec scan . --severity high
 
@@ -162,6 +165,26 @@ custom_rules_dirs: []
 ```
 
 CLI flags override config file values.
+
+### Optional Rust Acceleration (Secrets)
+
+RepoSec can offload `SEC-001`, `SEC-002`, and `SEC-003` scanning to a Rust binary while keeping the rest of the scanner in Python.
+
+Build the optional binary:
+
+```bash
+cd rust/reposec-secrets
+cargo build --release
+```
+
+Then either:
+
+```bash
+export REPOSEC_RUST_SECRETS_BIN="$PWD/target/release/reposec-secrets"
+reposec scan . --rust-secrets
+```
+
+Or place `reposec-secrets` in your `PATH`.
 
 ## Inline Suppression
 

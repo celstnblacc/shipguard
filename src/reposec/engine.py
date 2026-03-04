@@ -10,6 +10,7 @@ import pathspec
 
 from reposec.config import Config
 from reposec.models import Finding, ScanResult, Severity
+from reposec.rust_secrets import run_rust_secrets_scan
 from reposec.rules import get_rules_for_file, load_builtin_rules, load_custom_rules
 
 SUPPRESSION_RE = re.compile(r"(?:#|//)\s*reposec:ignore\s+([\w\-,\s]+)")
@@ -84,6 +85,8 @@ def _scan_file(
     for rule in rules:
         if rule.id in (config.disable_rules or []):
             continue
+        if config.use_rust_secrets and rule.id.startswith("SEC-"):
+            continue
         if rule.func is None:
             continue
 
@@ -146,6 +149,21 @@ def scan(
     result.rules_applied = len(get_registry())
 
     all_findings: list[Finding] = []
+    if config.use_rust_secrets:
+        rust_findings = run_rust_secrets_scan(files, target_dir)
+        for finding in rust_findings:
+            if finding.rule_id in (config.disable_rules or []):
+                continue
+            if finding.severity < threshold:
+                continue
+            try:
+                content = finding.file_path.read_text(encoding="utf-8", errors="replace")
+            except (OSError, PermissionError):
+                content = ""
+            if content and finding.rule_id in _get_suppressed_rules(content, finding.line_number):
+                continue
+            all_findings.append(finding)
+
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {
             pool.submit(_scan_file, f, config, threshold): f for f in files
