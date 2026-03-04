@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -40,10 +40,10 @@ jobs:
       'yarn.lock') != ''
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4  # latest
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
@@ -54,7 +54,7 @@ jobs:
       - name: Run pnpm audit
         if: hashFiles('pnpm-lock.yaml') != ''
         run: |
-          npm install -g pnpm
+          corepack enable
           pnpm audit || true
 
   # Layer 2: Secrets - Detect hardcoded credentials
@@ -63,12 +63,12 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2.3.4
+        uses: gitleaks/gitleaks-action@e6dab246340401bf53eec993b8f05aebe80ac636 # v2.3.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
@@ -79,10 +79,10 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -97,7 +97,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Layer 2 Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer2-secrets-report
           path: layer2-report.json
@@ -107,10 +107,10 @@ jobs:
     name: Layer 3 - SAST (RepoSec)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -131,7 +131,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Layer 3 Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer3-sast-report
           path: layer3-report.json
@@ -143,7 +143,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Post PR Comment about AI Review
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             github.rest.issues.createComment({
@@ -172,7 +172,7 @@ jobs:
             || true
 
       - name: Upload Layer 5 Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer5-dast-report
           path: layer5-zap-report.html
@@ -183,10 +183,10 @@ jobs:
     name: Layer 6 - Supply Chain Integrity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -216,7 +216,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Layer 6 Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer6-supply-chain-reports
           path: layer6-*-report.json
@@ -246,7 +246,7 @@ jobs:
     if: always()
     steps:
       - name: Download all reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
 
       - name: Print Security Summary
         run: |
