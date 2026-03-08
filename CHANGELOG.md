@@ -1,3 +1,5 @@
+> Maintainer instruction: This changelog is append-only. Always append new entries; do not edit or reorder previous entries.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
