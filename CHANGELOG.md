@@ -26,6 +26,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - `APP_USER` config added to `.env.example`
 - Broadened `.coverage` ignore pattern to catch `.coverage*` variants
+- Added Release Runbook section in `README.md` for PyPI trusted publishing (OIDC), tag flow, rerun guidance, and smoke-test verification.
+- Renamed tool from `reposec` → `shipguard`: package, CLI entrypoint, config files (`.reposec.yml` → `.shipguard.yml`), env vars (`REPOSEC_*` → `SHIPGUARD_*`), GitHub Action usage example updated to `celstnblacc/shipguard@main`.
 
 ---
 
@@ -41,9 +43,3 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Test suite: 217 functions across 27 files
 - Golden snapshot regression tests
 - Concurrent scanning support
-
-## [Unreleased] — 2026-03-08
-
-### Changed
-- Added a Release Runbook section in `README.md` for PyPI trusted publishing (OIDC), tag flow, rerun guidance, and smoke-test verification.
-- Updated GitHub Action usage example from `celstnblacc/shipguard@main` to `celstnblacc/shipguard@main`.
