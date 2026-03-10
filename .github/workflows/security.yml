@@ -202,10 +202,10 @@ jobs:
           fi
       - name: Upload Layer 6 Reports
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        if: always()
         with:
           name: layer6-supply-chain-reports
           path: layer6-*-report.json
-          if: always()
 
   # Layer 7: Observability - Comment reminder for monitoring setup
   layer-7-observability:
