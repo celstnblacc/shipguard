@@ -73,8 +73,8 @@ def _scan_file(
     file_path: Path,
     config: Config,
     severity_threshold: Severity,
-    include_rules: set[str],
-    excluded_rules: set[str],
+    include_rules: set[str] | None = None,
+    excluded_rules: set[str] | None = None,
 ) -> list[Finding]:
     """Scan a single file with all applicable rules."""
     try:
@@ -83,13 +83,15 @@ def _scan_file(
         return []
 
     rules = get_rules_for_file(file_path)
+    include = include_rules or set()
+    excluded = excluded_rules or set()
     findings: list[Finding] = []
 
     seen_line_rules: dict[int, set[str]] = {}
     for rule in rules:
-        if include_rules and rule.id not in include_rules:
+        if include and rule.id not in include:
             continue
-        if rule.id in excluded_rules:
+        if rule.id in excluded:
             continue
         if config.use_rust_secrets and rule.id.startswith("SEC-"):
             continue

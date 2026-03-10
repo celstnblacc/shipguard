@@ -27,7 +27,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `APP_USER` config added to `.env.example`
 - Broadened `.coverage` ignore pattern to catch `.coverage*` variants
 - Added Release Runbook section in `README.md` for PyPI trusted publishing (OIDC), tag flow, rerun guidance, and smoke-test verification.
-- Renamed tool from `reposec` → `shipguard`: package, CLI entrypoint, config files (`.reposec.yml` → `.shipguard.yml`), env vars (`REPOSEC_*` → `SHIPGUARD_*`), GitHub Action usage example updated to `celstnblacc/shipguard@main`.
+- Renamed tool to `shipguard`: package, CLI entrypoint, config files (`.shipguard.yml`), env vars (`SHIPGUARD_*`), GitHub Action usage example updated to `celstnblacc/shipguard@main`.
 
 ---
 
@@ -61,7 +61,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Makefile security targets now use supported CLI options and output formats:
   - replaced unsupported `--rules` with `--include-rules`
   - replaced unsupported `--format text` with `--format terminal`
-- `.pre-commit-config.yaml.template` updated from legacy `reposec` references to `shipguard`, including config filename and command examples.
+- `.pre-commit-config.yaml.template` updated from legacy project-name references to `shipguard`, including config filename and command examples.
 
 ### Changed
 - Documentation alignment for current rule inventory:

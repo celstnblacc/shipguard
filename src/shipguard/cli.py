@@ -14,7 +14,7 @@ from shipguard.config import DEFAULT_CONFIG_TEMPLATE, load_config
 from shipguard.engine import scan
 from shipguard.formatters import get_formatter
 from shipguard.models import Severity
-from shipguard.rules import get_registry, load_builtin_rules
+from shipguard.rules import get_registry, load_builtin_rules, load_custom_rules
 
 app = typer.Typer(
     name="shipguard",
@@ -29,6 +29,15 @@ def _parse_rule_csv(raw: Optional[str]) -> set[str]:
     if not raw:
         return set()
     return {item.strip().upper() for item in raw.split(",") if item.strip()}
+
+
+def _resolve_custom_rule_dirs(target_dir: Path, configured_dirs: list[str]) -> list[Path]:
+    """Resolve custom rule directories against scan target dir."""
+    resolved: list[Path] = []
+    for rule_dir in configured_dirs:
+        p = Path(rule_dir)
+        resolved.append(p if p.is_absolute() else (target_dir / p))
+    return resolved
 
 
 def version_callback(value: bool) -> None:
@@ -98,8 +107,9 @@ def scan_cmd(
     include_rule_ids = _parse_rule_csv(include_rules)
     exclude_rule_ids = _parse_rule_csv(exclude_rules)
 
-    # Validate rule IDs against loaded registry.
+    # Validate rule IDs against loaded registry (builtin + configured custom rules).
     load_builtin_rules()
+    load_custom_rules(_resolve_custom_rule_dirs(path, config.custom_rules_dirs))
     known_ids = set(get_registry().keys())
     unknown_ids = sorted((include_rule_ids | exclude_rule_ids) - known_ids)
     if unknown_ids:

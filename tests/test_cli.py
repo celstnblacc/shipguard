@@ -5,6 +5,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from shipguard.cli import app
+from shipguard.rules import _registry
 
 runner = CliRunner()
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -99,6 +100,66 @@ class TestScanCommand:
         )
         assert result.exit_code == 1
         assert "Unknown rule ID" in result.output
+
+    def test_scan_include_custom_rule_via_config(self, tmp_path):
+        custom_dir = tmp_path / "custom_rules"
+        custom_dir.mkdir()
+        (custom_dir / "custom_rule.py").write_text(
+            """
+from shipguard.models import Finding, Severity
+from shipguard.rules import register
+
+@register(
+    id="CUST-001",
+    name="custom-test-rule",
+    severity=Severity.LOW,
+    description="Custom rule for tests",
+    extensions=[".txt"],
+)
+def custom_rule(file_path, content, config=None):
+    findings = []
+    for i, line in enumerate(content.splitlines(), 1):
+        if "danger" in line:
+            findings.append(
+                Finding(
+                    rule_id="CUST-001",
+                    severity=Severity.LOW,
+                    file_path=file_path,
+                    line_number=i,
+                    line_content=line.rstrip(),
+                    message="custom danger marker found",
+                )
+            )
+    return findings
+""".strip()
+        )
+        cfg = tmp_path / ".shipguard.yml"
+        cfg.write_text("custom_rules_dirs:\n  - custom_rules\n")
+        (tmp_path / "sample.txt").write_text("ok\ndanger\n")
+
+        try:
+            result = runner.invoke(
+                app,
+                [
+                    "scan",
+                    str(tmp_path),
+                    "--config",
+                    str(cfg),
+                    "--include-rules",
+                    "CUST-001",
+                    "--format",
+                    "json",
+                    "--severity",
+                    "low",
+                ],
+            )
+            assert result.exit_code == 1
+            import json
+            payload = json.loads(result.output)
+            assert payload["summary"]["total"] >= 1
+            assert {f["rule_id"] for f in payload["findings"]} == {"CUST-001"}
+        finally:
+            _registry.pop("CUST-001", None)
 
 
 class TestListRulesCommand:

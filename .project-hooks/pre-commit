@@ -1,8 +1,8 @@
 #!/bin/bash
-# RepoSec Project Pre-commit Hook
+# ShipGuard Project Pre-commit Hook
 # Runs tests before allowing commits
 
-echo "🧪 Running RepoSec tests..."
+echo "🧪 Running ShipGuard tests..."
 
 # Resolve pytest command with virtualenv-first behavior.
 PYTEST_CMD=""
