@@ -115,7 +115,7 @@ shipguard init /path/to/target-repo
 Use the helper script to create a local staging target for `go-live`/`infra-probe` verification:
 
 ```bash
-# Build + start local staging and wait for health
+# Start local staging and wait for health
 ./scripts/go_live_staging.sh up
 
 # Show status
@@ -126,6 +126,28 @@ Use the helper script to create a local staging target for `go-live`/`infra-prob
 ```
 
 This workflow uses `docker-compose.staging.yml` and `.env.staging` (auto-copied from `.env.staging.example` if missing).
+
+### Release Rollback Runbook
+
+Rollback trigger criteria:
+
+- New `critical` or `high` finding in post-release scan
+- PyPI installation failure for latest tag
+- CLI regression in critical path (`shipguard scan`, `shipguard list-rules`)
+
+Rollback steps:
+
+1. Stop promotion and notify the on-call release owner.
+2. Repoint users to the previous stable release tag in release notes.
+3. Cut a patch release from `main` with the fix and rerun:
+   - `pytest tests -q`
+   - `shipguard scan . --format terminal`
+4. Publish patched tag using `.github/workflows/release.yml`.
+
+Ownership:
+
+- Primary: repository maintainers listed in `SECURITY.md`
+- Escalation: GitHub issue with `release-blocker` label and incident summary
 
 
 ## 7-Layer Security Pipeline

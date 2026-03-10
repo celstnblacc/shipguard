@@ -1,16 +1,15 @@
 services:
   shipguard-runner:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: shipguard-local:staging
+    image: python:3.12-slim
     container_name: shipguard-runner-staging
     env_file:
       - .env.staging
     command: ["sleep", "infinity"]
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.50
     healthcheck:
-      test: ["CMD", "shipguard", "--version"]
+      test: ["CMD", "python", "--version"]
       interval: 30s
       timeout: 5s
       retries: 3

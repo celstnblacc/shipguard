@@ -13,7 +13,7 @@ usage() {
 Usage: scripts/go_live_staging.sh <up|down|status|logs>
 
 Commands:
-  up      Build and start local staging, then wait for health check
+  up      Start local staging, then wait for health check
   down    Stop and remove local staging stack
   status  Show compose service status
   logs    Tail service logs
@@ -70,7 +70,7 @@ case "$cmd" in
   up)
     require_compose
     ensure_env
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
     wait_for_health
     docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
     ;;

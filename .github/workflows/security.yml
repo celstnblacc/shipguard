@@ -86,7 +86,7 @@ jobs:
       - name: Run ShipGuard for Secrets (Layer 2, blocking)
         run: |
           shipguard scan . --severity critical \
-            --rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 \
+            --include-rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 \
             --format json > layer2-report.json
           CRITICAL=$(python3 -c "import json; d=json.load(open('layer2-report.json')); print(sum(1 for f in d.get('findings',[]) if f['severity']=='critical'))")
           if [ "$CRITICAL" -gt 0 ]; then
@@ -185,13 +185,13 @@ jobs:
         run: pip install -e .
 
       - name: Check for Unpinned Docker Images
-        run: shipguard scan . --rules SC-001 --format json > layer6-docker-report.json
+        run: shipguard scan . --include-rules SC-001 --format json > layer6-docker-report.json
       - name: Check for Unpinned Python Dependencies
-        run: shipguard scan . --rules SC-002 --format json > layer6-python-deps-report.json
+        run: shipguard scan . --include-rules SC-002 --format json > layer6-python-deps-report.json
       - name: Check for npm/pnpm without Lockfile
-        run: shipguard scan . --rules SC-003 --format json > layer6-npm-lockfile-report.json
+        run: shipguard scan . --include-rules SC-003 --format json > layer6-npm-lockfile-report.json
       - name: Check .gitignore for missing secret entries
-        run: shipguard scan . --rules SC-004 --format json > layer6-gitignore-report.json
+        run: shipguard scan . --include-rules SC-004 --format json > layer6-gitignore-report.json
       - name: Verify Lockfiles
         run: |
           if [ -f "requirements.txt" ]; then
