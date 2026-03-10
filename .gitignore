@@ -16,7 +16,8 @@ env/
 
 # Testing
 .pytest_cache/
-.coverage
+.hypothesis/
+.coverage*
 htmlcov/
 .tox/
 
@@ -31,7 +32,32 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Rust
+target/
+rust/**/target/
+
 # Secrets
 .env
 .env.*
 !.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Local docs scratch files (keep repo docs focused)
+docs/SAAS_ARCHITECTURE.md
+docs/IMPLEMENTATION_SUMMARY.md
+
+!.env.staging.example
+
+# codex-pii-guard:start
+.env
+.env.local
+.env.*.local
+*.log
+*.session
+*.transcript
+.git_new/
+!.env.example
+# codex-pii-guard:end

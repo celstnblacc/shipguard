@@ -1,8 +1,8 @@
-# RepoSec Project Guidelines for Claude Code
+# ShipGuard Project Guidelines for Claude Code
 
 ## Project Description
 
-**RepoSec** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 40 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
+**ShipGuard** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 40 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
 
 **Key Features:**
 - 40 built-in security rules across 7 layers
@@ -26,7 +26,7 @@
 
 ## Build Commands
 
-RepoSec uses Hatchling as the build system. Use these commands:
+ShipGuard uses Hatchling as the build system. Use these commands:
 
 ```bash
 # Build the package (wheel)
@@ -50,30 +50,32 @@ rm -rf build/ dist/ *.egg-info __pycache__
 
 **Run all tests:**
 ```bash
-pytest tests/ -v
+PYTHONPATH=src pytest tests/ -v
 ```
 
 **Run specific test file:**
 ```bash
-pytest tests/test_cli.py -v
-pytest tests/test_rules_secrets.py -v
-pytest tests/test_rules_supply_chain.py -v
+PYTHONPATH=src pytest tests/test_cli.py -v
+PYTHONPATH=src pytest tests/test_rules_secrets.py -v
+PYTHONPATH=src pytest tests/test_rules_supply_chain.py -v
 ```
 
 **Run with coverage:**
 ```bash
-pytest tests/ --cov=src/reposec --cov-report=html
+PYTHONPATH=src pytest tests/ --cov=src/shipguard --cov-report=html
 ```
 
 **Run a specific test:**
 ```bash
-pytest tests/test_cli.py::TestScanCommand::test_scan_finds_vulnerabilities -v
+PYTHONPATH=src pytest tests/test_cli.py::TestScanCommand::test_scan_finds_vulnerabilities -v
 ```
 
 **Run tests matching a pattern:**
 ```bash
-pytest tests/ -k "secrets" -v
+PYTHONPATH=src pytest tests/ -k "secrets" -v
 ```
+
+> **Note:** `PYTHONPATH=src` ensures pytest loads rules from source rather than any stale installed package in site-packages. Alternatively, run `pip install -e .` once to install in editable mode and skip the prefix.
 
 **Run quick smoke tests:**
 ```bash
@@ -85,8 +87,8 @@ pytest tests/test_cli.py::TestListRulesCommand -v
 ## Project Structure
 
 ```
-reposec/
-├── src/reposec/                    # Main package
+shipguard/
+├── src/shipguard/                    # Main package
 │   ├── __init__.py
 │   ├── cli.py                      # CLI entry point (Typer app)
 │   ├── engine.py                   # Scan engine logic
@@ -148,8 +150,8 @@ reposec/
 All security rules follow this pattern:
 
 ```python
-from reposec.models import Finding, Severity
-from reposec.rules import register
+from shipguard.models import Finding, Severity
+from shipguard.rules import register
 
 @register(
     id="CATEGORY-###",
@@ -221,13 +223,13 @@ make help             # See all available targets
 
 ```bash
 # Scan just the fixtures
-reposec scan tests/fixtures/
+shipguard scan tests/fixtures/
 
 # Scan with JSON output
-reposec scan tests/fixtures/ --format json
+shipguard scan tests/fixtures/ --format json
 
 # Filter by severity
-reposec scan tests/fixtures/ --severity critical
+shipguard scan tests/fixtures/ --severity critical
 ```
 
 ### Update Documentation
@@ -244,10 +246,34 @@ reposec scan tests/fixtures/ --severity critical
 ### Before Committing
 
 1. **Run tests**: `pytest tests/ -v` — All tests must pass
-2. **Check syntax**: `python -m py_compile src/reposec/**/*.py`
-3. **Review rule counts**: `reposec list-rules | wc -l` should match test expectations
+2. **Check syntax**: `python -m py_compile src/shipguard/**/*.py`
+3. **Review rule counts**: `shipguard list-rules | wc -l` should match test expectations
 4. **Verify no hardcoded secrets**: `grep -r "password\|api_key\|secret" src/ | grep -v "test\|example"`
 5. **Update documentation** if adding/changing rules
+
+### Security Exceptions for Test Fixtures
+
+⚠️ **Important:** This is a security scanner tool. Test fixtures intentionally contain vulnerable code to verify ShipGuard detects security issues correctly.
+
+**Test fixtures contain:**
+- Unsafe `eval()` statements (PY-001)
+- Insecure YAML loading (PY-002)
+- Path traversal vulnerabilities (PY-003)
+- Unsafe shell `eval` (SHELL-001)
+- Unsafe eval in JavaScript (JS-001)
+- Untrusted data in GitHub Actions (GHA-001)
+
+**These are EXPECTED and necessary:**
+- Located in `tests/fixtures/` — clearly marked as test data
+- Used to verify ShipGuard detection works correctly
+- Should NOT be fixed or removed
+- ShipGuard correctly flags them as critical vulnerabilities
+
+**During /ship pipeline:**
+- ShipGuard will report vulnerabilities in `tests/fixtures/`
+- This is expected behavior
+- Proceed with commit despite critical findings in fixtures
+- Production code in `src/shipguard/` should remain clean
 
 ### No Destructive Operations
 
@@ -263,7 +289,7 @@ reposec scan tests/fixtures/ --severity critical
 Before each commit, this project runs:
 - All tests (pytest)
 - Syntax checks
-- Security scans (RepoSec)
+- Security scans (ShipGuard)
 
 If any fail, the commit is blocked. Fix the issues and try again.
 
@@ -304,7 +330,7 @@ pre-commit run --all-files
 
 ## References
 
-- **Main Project**: [RepoSec on GitHub](https://github.com/celstnblacc/reposec)
+- **Main Project**: [ShipGuard on GitHub](https://github.com/celstnblacc/shipguard)
 - **7-Layer Framework**: See `docs/7_LAYER_SECURITY_MODEL.md`
 - **Pipeline Guide**: See `docs/PIPELINE.md`
 - **Implementation Details**: See `IMPLEMENTATION_SUMMARY.md`

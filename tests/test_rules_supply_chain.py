@@ -1,12 +1,13 @@
-"""Tests for supply chain rules (SC-001, SC-002, SC-003)."""
+"""Tests for supply chain rules (SC-001 through SC-004)."""
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.supply_chain import (
+from shipguard.models import Severity
+from shipguard.rules.supply_chain import (
     sc_001_docker_latest,
     sc_002_unpinned_python_dep,
     sc_003_npm_frozen_lockfile,
+    sc_004_missing_gitignore_entries,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "supply_chain"
@@ -100,6 +101,13 @@ pinned==1.0.0
         path = Path("requirements.txt")
         findings = sc_002_unpinned_python_dep(path, content)
         assert len(findings) == 0
+
+    def test_sc_002_skips_empty_lines(self):
+        """Test that SC-002 skips blank lines."""
+        content = "requests\n\nflask==3.0.0"
+        path = Path("requirements.txt")
+        findings = sc_002_unpinned_python_dep(path, content)
+        assert len(findings) == 1
 
     def test_sc_002_skips_option_lines(self):
         """Test that SC-002 skips option lines."""
@@ -219,3 +227,36 @@ class TestSupplyChainFixtures:
             content = safe_file.read_text()
             findings = sc_002_unpinned_python_dep(safe_file, content)
             assert len(findings) == 0
+
+
+class TestSc004MissingGitignoreEntries:
+    def test_sc_004_detects_missing_env_entry(self):
+        """Test that SC-004 flags a .gitignore missing .env."""
+        content = "node_modules/\ndist/\n*.log"
+        path = Path(".gitignore")
+        findings = sc_004_missing_gitignore_entries(path, content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SC-004"
+        assert findings[0].severity == Severity.HIGH
+        assert ".env" in findings[0].message
+
+    def test_sc_004_passes_complete_gitignore(self):
+        """Test that SC-004 passes when all required entries are present."""
+        content = "node_modules/\n.env\n*.env.*\n*.key\n*.pem\n*.p12\n*.pfx\n"
+        path = Path(".gitignore")
+        findings = sc_004_missing_gitignore_entries(path, content)
+        assert len(findings) == 0
+
+    def test_sc_004_skips_non_gitignore_files(self):
+        """Test that SC-004 only runs on .gitignore files."""
+        content = "node_modules/"
+        path = Path("somefile.txt")
+        findings = sc_004_missing_gitignore_entries(path, content)
+        assert len(findings) == 0
+
+    def test_sc_004_accepts_wildcard_env(self):
+        """Test that .env.* counts as covering .env entries."""
+        content = ".env\n.env.*\n*.key\n*.pem\n*.p12\n*.pfx"
+        path = Path(".gitignore")
+        findings = sc_004_missing_gitignore_entries(path, content)
+        assert len(findings) == 0
