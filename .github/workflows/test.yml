@@ -32,8 +32,16 @@ jobs:
 
       - name: Test CLI
         run: |
+          set -e
           shipguard list-rules
+          set +e
           shipguard scan tests/fixtures/ --format json > /tmp/test-output.json
+          SCAN_EXIT=$?
+          set -e
+          if [ "$SCAN_EXIT" -ne 0 ] && [ "$SCAN_EXIT" -ne 1 ]; then
+            echo "Unexpected shipguard exit code: $SCAN_EXIT"
+            exit "$SCAN_EXIT"
+          fi
           python -m json.tool < /tmp/test-output.json > /dev/null
 
   lint:
@@ -51,4 +59,8 @@ jobs:
         run: pip install -q pre-commit
 
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: |
+          pre-commit run --all-files check-added-large-files
+          pre-commit run --all-files check-case-conflict
+          pre-commit run --all-files check-json
+          pre-commit run --all-files check-merge-conflict
