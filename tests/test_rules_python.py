@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.python import (
+from shipguard.models import Severity
+from shipguard.rules.python import (
     py_001_zip_traversal,
     py_002_yaml_unsafe,
     py_003_eval_exec,

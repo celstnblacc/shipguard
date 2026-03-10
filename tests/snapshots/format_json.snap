@@ -1,0 +1,35 @@
+{
+  "findings": [
+    {
+      "rule_id": "PY-003",
+      "severity": "critical",
+      "file_path": "src/app.py",
+      "line_number": 10,
+      "line_content": "result = eval(user_input)",
+      "message": "eval() can execute arbitrary code if input is untrusted",
+      "cwe_id": "CWE-95",
+      "fix_hint": "Replace eval() with ast.literal_eval() or a safe parser"
+    },
+    {
+      "rule_id": "SEC-001",
+      "severity": "high",
+      "file_path": "config/secrets.env",
+      "line_number": 2,
+      "line_content": "aws_key=AKIA1234567890ABCDEF",
+      "message": "AWS access key ID detected in file",
+      "cwe_id": "CWE-798",
+      "fix_hint": "Remove the key and rotate it in AWS IAM; use environment variables instead"
+    }
+  ],
+  "summary": {
+    "critical": 1,
+    "high": 1,
+    "medium": 0,
+    "low": 0,
+    "total": 2,
+    "files_scanned": 3,
+    "files_skipped": 1,
+    "rules_applied": 40,
+    "duration_seconds": 1.234
+  }
+}

@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.github_actions import (
+from shipguard.models import Severity
+from shipguard.rules.github_actions import (
     gha_001_workflow_injection,
     gha_002_unpinned_action,
     gha_003_excessive_permissions,

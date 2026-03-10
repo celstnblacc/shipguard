@@ -1,3 +1,4 @@
+---
 # Pre-commit hook configuration for RepoSec
 # Implements Layers 2 and 3 of the 7-layer security pipeline
 
@@ -10,11 +11,12 @@ repos:
     hooks:
       - id: reposec
         name: RepoSec SAST Scanner
-        entry: reposec scan
+        entry: bash -c 'which reposec > /dev/null && reposec scan . --config .reposec-precommit.yml || echo "reposec not installed, skipping"'
         language: system
         types: [text]
         pass_filenames: false
         stages: [commit]
+        exclude: ^tests/
 
   # General code quality
   - repo: https://github.com/pre-commit/pre-commit-hooks

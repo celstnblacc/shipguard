@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.javascript import (
+from shipguard.models import Severity
+from shipguard.rules.javascript import (
     js_001_eval,
     js_002_path_traversal,
     js_003_symlink_following,

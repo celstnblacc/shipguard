@@ -2,7 +2,7 @@
 
 ## ✅ Implementation Complete
 
-All components of the 7-layer unified security pipeline have been successfully implemented in RepoSec.
+All components of the 7-layer unified security pipeline have been successfully implemented in ShipGuard.
 
 ---
 
@@ -13,7 +13,7 @@ All components of the 7-layer unified security pipeline have been successfully i
 - **SEC-002**: GCP API Key detection (AIza pattern)
 - **SEC-003**: GitHub Personal Access Token detection (ghp_*, gho_*, etc.)
 
-**File**: `src/reposec/rules/secrets.py`
+**File**: `src/shipguard/rules/secrets.py`
 **Features**:
 - Detects cloud provider credentials in YAML, JSON, config, and .env files
 - Skips false positives (environment variables, templates, comments)
@@ -24,7 +24,7 @@ All components of the 7-layer unified security pipeline have been successfully i
 - **SC-002**: Python dependencies without version pins (requirements.txt)
 - **SC-003**: npm/pnpm install without --frozen-lockfile or --ci flags
 
-**File**: `src/reposec/rules/supply_chain.py`
+**File**: `src/shipguard/rules/supply_chain.py`
 **Features**:
 - Detects unpinned base images and dependencies
 - Checks for safe lockfile installation practices
@@ -60,7 +60,7 @@ All components of the 7-layer unified security pipeline have been successfully i
   - ~2,500 words
 
 - **`docs/PIPELINE.md`** — Quick reference guide
-  - Position of RepoSec in the framework
+  - Position of ShipGuard in the framework
   - How all 7 layers work together
   - Quick start for each layer
   - ~1,000 words
@@ -86,11 +86,11 @@ All components of the 7-layer unified security pipeline have been successfully i
 
 **Layers Implemented**:
 - L1: pip-audit + npm audit
-- L2: gitleaks + reposec (secrets rules)
-- L3: reposec (full SAST)
+- L2: gitleaks + shipguard (secrets rules)
+- L3: shipguard (full SAST)
 - L4: PR comment reminder for AI review
 - L5: Conditional OWASP ZAP scan
-- L6: reposec (supply chain rules) + lockfile checks
+- L6: shipguard (supply chain rules) + lockfile checks
 - L7: Comment reminder for observability setup
 
 ### Makefile
@@ -112,7 +112,7 @@ All components of the 7-layer unified security pipeline have been successfully i
 **Features**:
 - Complete 7-layer pre-commit configuration
 - All hooks pinned to specific versions (not `main`)
-- Includes: gitleaks, reposec, bandit, shellcheck, yamllint, hadolint
+- Includes: gitleaks, shipguard, bandit, shellcheck, yamllint, hadolint
 - Comprehensive comments explaining each layer
 - Ready to copy and customize
 
@@ -121,7 +121,7 @@ All components of the 7-layer unified security pipeline have been successfully i
 ## Code Updates
 
 ### Rule Registry
-**File**: `src/reposec/rules/__init__.py`
+**File**: `src/shipguard/rules/__init__.py`
 - Updated `load_builtin_rules()` to import new `secrets` and `supply_chain` modules
 - Maintains existing rule loading pattern
 
@@ -159,8 +159,8 @@ All components of the 7-layer unified security pipeline have been successfully i
 
 ### New Files (11)
 ```
-src/reposec/rules/secrets.py
-src/reposec/rules/supply_chain.py
+src/shipguard/rules/secrets.py
+src/shipguard/rules/supply_chain.py
 tests/test_rules_secrets.py
 tests/test_rules_supply_chain.py
 tests/fixtures/secrets/vulnerable.yml
@@ -182,7 +182,7 @@ IMPLEMENTATION_SUMMARY.md (this file)
 
 ### Modified Files (2)
 ```
-src/reposec/rules/__init__.py
+src/shipguard/rules/__init__.py
 tests/test_cli.py
 README.md
 ```
@@ -210,7 +210,7 @@ README.md
 
 ## Next Steps for Users
 
-1. **Verify installation**: `reposec list-rules` should show 40 rules
+1. **Verify installation**: `shipguard list-rules` should show 40 rules
 2. **Run tests**: `pytest tests/test_rules_*.py -v` (once dev dependencies installed)
 3. **Test locally**: `make security` to run L1, L2, L3, L6
 4. **Enable CI/CD**: Push to trigger `.github/workflows/security.yml`
@@ -221,7 +221,7 @@ README.md
 
 ## Implementation Notes
 
-- All new rules follow the established RepoSec pattern (dataclass-based, with @register decorator)
+- All new rules follow the established ShipGuard pattern (dataclass-based, with @register decorator)
 - False positive detection logic built into secrets rules (skips env vars, templates, comments)
 - Supply chain rules check file patterns correctly (requirements*.txt, Dockerfile, docker-compose, etc.)
 - Documentation is self-contained and doesn't require external Obsidian vault references

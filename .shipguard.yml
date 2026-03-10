@@ -1,0 +1,17 @@
+# Repo-level scan profile for the ShipGuard codebase itself.
+# Excludes intentional vulnerable fixtures and rule-definition text to keep
+# local `shipguard scan .` output focused on actionable findings.
+
+severity_threshold: medium
+
+exclude_paths:
+  - "vendor/**"
+  - "node_modules/**"
+  - "tests/**"
+  - "docs/**"
+  - "src/shipguard/rules/**"
+  - "rust/**"
+
+disable_rules: []
+custom_rules_dirs: []
+use_rust_secrets: false

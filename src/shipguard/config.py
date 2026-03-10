@@ -1,4 +1,4 @@
-"""Configuration system for RepoSec using Pydantic."""
+"""Configuration system for ShipGuard using Pydantic."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, Field
 
-CONFIG_FILENAMES = [".reposec.yml", ".reposec.yaml", "reposec.yml"]
+CONFIG_FILENAMES = [".shipguard.yml", ".shipguard.yaml", "shipguard.yml"]
 
 DEFAULT_CONFIG_TEMPLATE = """\
-# RepoSec configuration
-# See: https://github.com/DevOpsCelstn/reposec
+# ShipGuard configuration
+# See: https://github.com/DevOpsCelstn/shipguard
 
 # Minimum severity to report: critical, high, medium, low
 severity_threshold: medium
@@ -30,16 +30,21 @@ disable_rules: []
 
 # Additional directories containing custom rule modules
 custom_rules_dirs: []
+
+# Optional: use Rust-accelerated secrets scanning (SEC-001/002/003)
+# Requires a built `shipguard-secrets` binary in PATH or SHIPGUARD_RUST_SECRETS_BIN.
+use_rust_secrets: false
 """
 
 
 class Config(BaseModel):
-    """RepoSec scan configuration."""
+    """ShipGuard scan configuration."""
 
     severity_threshold: str = Field(default="medium")
     exclude_paths: list[str] = Field(default_factory=list)
     disable_rules: list[str] = Field(default_factory=list)
     custom_rules_dirs: list[str] = Field(default_factory=list)
+    use_rust_secrets: bool = Field(default=False)
 
 
 def find_config(target_dir: Path) -> Path | None:

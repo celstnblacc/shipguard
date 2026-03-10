@@ -1,4 +1,4 @@
-"""Typer CLI for RepoSec security scanner."""
+"""Typer CLI for ShipGuard security scanner."""
 
 from __future__ import annotations
 
@@ -9,16 +9,16 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from reposec import __version__
-from reposec.config import DEFAULT_CONFIG_TEMPLATE, load_config
-from reposec.engine import scan
-from reposec.formatters import get_formatter
-from reposec.models import Severity
-from reposec.rules import get_registry, load_builtin_rules
+from shipguard import __version__
+from shipguard.config import DEFAULT_CONFIG_TEMPLATE, load_config
+from shipguard.engine import scan
+from shipguard.formatters import get_formatter
+from shipguard.models import Severity
+from shipguard.rules import get_registry, load_builtin_rules
 
 app = typer.Typer(
-    name="reposec",
-    help="RepoSec — Security audit tool for any repository.",
+    name="shipguard",
+    help="ShipGuard — Security audit tool for any repository.",
     no_args_is_help=True,
 )
 console = Console()
@@ -26,7 +26,7 @@ console = Console()
 
 def version_callback(value: bool) -> None:
     if value:
-        console.print(f"reposec {__version__}")
+        console.print(f"shipguard {__version__}")
         raise typer.Exit()
 
 
@@ -37,7 +37,7 @@ def main(
         help="Show version and exit.",
     ),
 ) -> None:
-    """RepoSec — Security audit tool for any repository."""
+    """ShipGuard — Security audit tool for any repository."""
 
 
 @app.command("scan")
@@ -58,10 +58,17 @@ def scan_cmd(
     config_file: Optional[Path] = typer.Option(
         None, "--config", "-c", help="Path to config file.",
     ),
+    rust_secrets: Optional[bool] = typer.Option(
+        None,
+        "--rust-secrets/--no-rust-secrets",
+        help="Use optional Rust-accelerated secrets scanning for SEC-* rules.",
+    ),
 ) -> None:
     """Scan a directory for security vulnerabilities."""
     format = format.lower()
     config = load_config(config_path=config_file, target_dir=path)
+    if rust_secrets is not None:
+        config.use_rust_secrets = rust_secrets
 
     threshold = None
     if severity:
@@ -129,7 +136,7 @@ def list_rules(
         typer.echo(json.dumps(rules, indent=2))
         return
 
-    table = Table(title=f"RepoSec Rules ({len(registry)} total)")
+    table = Table(title=f"ShipGuard Rules ({len(registry)} total)")
     table.add_column("ID", style="bold", width=12)
     table.add_column("Name", width=30)
     table.add_column("Severity", width=10)
@@ -159,11 +166,11 @@ def list_rules(
 @app.command()
 def init(
     path: Path = typer.Argument(
-        ".", help="Directory to create .reposec.yml in.", exists=True,
+        ".", help="Directory to create .shipguard.yml in.", exists=True,
     ),
 ) -> None:
-    """Generate a .reposec.yml configuration template."""
-    config_path = Path(path) / ".reposec.yml"
+    """Generate a .shipguard.yml configuration template."""
+    config_path = Path(path) / ".shipguard.yml"
     if config_path.exists():
         console.print(f"[yellow]{config_path} already exists.[/yellow]")
         raise typer.Exit(code=1)

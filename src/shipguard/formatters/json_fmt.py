@@ -1,10 +1,10 @@
-"""JSON formatter for RepoSec scan results."""
+"""JSON formatter for ShipGuard scan results."""
 
 from __future__ import annotations
 
 import json
 
-from reposec.models import ScanResult
+from shipguard.models import ScanResult
 
 
 def format_json(result: ScanResult, **_kwargs) -> str:

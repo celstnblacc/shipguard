@@ -1,25 +1,25 @@
-"""Tests for the RepoSec scanner engine."""
+"""Tests for the ShipGuard scanner engine."""
 
 from pathlib import Path
 
-from reposec.config import Config
-from reposec.engine import _get_suppressed_rules, scan
-from reposec.models import Severity
+from shipguard.config import Config
+from shipguard.engine import _get_suppressed_rules, scan
+from shipguard.models import Finding, Severity
 
 
 class TestSuppression:
     def test_suppresses_rule_on_same_line(self):
-        content = 'eval(data)  # reposec:ignore PY-003'
+        content = 'eval(data)  # shipguard:ignore PY-003'
         suppressed = _get_suppressed_rules(content, 1)
         assert "PY-003" in suppressed
 
     def test_suppresses_rule_on_line_above(self):
-        content = '# reposec:ignore PY-003\neval(data)'
+        content = '# shipguard:ignore PY-003\neval(data)'
         suppressed = _get_suppressed_rules(content, 2)
         assert "PY-003" in suppressed
 
     def test_suppresses_multiple_rules(self):
-        content = '# reposec:ignore PY-003, PY-006'
+        content = '# shipguard:ignore PY-003, PY-006'
         suppressed = _get_suppressed_rules(content, 1)
         assert "PY-003" in suppressed
         assert "PY-006" in suppressed
@@ -81,8 +81,8 @@ class TestScan:
         rule_dir.mkdir()
         (rule_dir / "custom_rule.py").write_text(
             """
-from reposec.models import Finding, Severity
-from reposec.rules import register
+from shipguard.models import Finding, Severity
+from shipguard.rules import register
 
 @register(
     id="CUST-001",
@@ -124,3 +124,34 @@ def custom_rule(file_path, content, config=None):
         py_005 = [f for f in result.findings if f.rule_id == "PY-005"]
         assert len(py_005) == 1
         assert len(shell_009) == 0
+
+    def test_scan_uses_rust_secrets_when_enabled(self, tmp_path, monkeypatch):
+        p = tmp_path / "secrets.yml"
+        p.write_text("aws_key: AKIA1234567890ABCDEF\n")
+
+        def _mock_rust(files, target_dir):
+            return [
+                Finding(
+                    rule_id="SEC-001",
+                    severity=Severity.CRITICAL,
+                    file_path=p,
+                    line_number=1,
+                    line_content="aws_key: AKIA1234567890ABCDEF",
+                    message="AWS access key ID detected in file",
+                    cwe_id="CWE-798",
+                )
+            ]
+
+        monkeypatch.setattr("shipguard.engine.run_rust_secrets_scan", _mock_rust)
+        result = scan(tmp_path, config=Config(use_rust_secrets=True), severity_threshold=Severity.LOW)
+        sec_findings = [f for f in result.findings if f.rule_id == "SEC-001"]
+        assert len(sec_findings) == 1
+
+    def test_scan_skips_python_secret_rules_when_rust_enabled(self, tmp_path, monkeypatch):
+        p = tmp_path / "secrets.yml"
+        p.write_text("aws_key: AKIA1234567890ABCDEF\n")
+        monkeypatch.setattr("shipguard.engine.run_rust_secrets_scan", lambda files, target_dir: [])
+
+        result = scan(tmp_path, config=Config(use_rust_secrets=True), severity_threshold=Severity.LOW)
+        sec_findings = [f for f in result.findings if f.rule_id.startswith("SEC-")]
+        assert len(sec_findings) == 0

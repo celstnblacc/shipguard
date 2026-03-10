@@ -1,5 +1,5 @@
 ---
-name: 'RepoSec Security Scan'
+name: 'ShipGuard Security Scan'
 description: 'Scan for security vulnerabilities across languages'
 branding:
   icon: 'shield'
@@ -19,16 +19,18 @@ inputs:
     required: false
     default: '.'
   config:
-    description: 'Path to .reposec.yml config file'
+    description: 'Path to .shipguard.yml config file'
     required: false
     default: ''
 
 runs:
   using: 'composite'
   steps:
-    - name: Install RepoSec
+    - name: Install ShipGuard
       shell: bash
-      run: pip install reposec
+      # Install from the action's own checkout so the version always matches the action tag,
+      # eliminating the unpinned-package supply chain risk.
+      run: pip install "$GITHUB_ACTION_PATH"
 
     - name: Run Security Scan
       shell: bash
@@ -38,4 +40,4 @@ runs:
         if [ -n "${{ inputs.config }}" ]; then
           ARGS+=(--config "${{ inputs.config }}")
         fi
-        reposec "${ARGS[@]}"
+        shipguard "${ARGS[@]}"

@@ -2,9 +2,11 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.shell import (
+from shipguard.models import Severity
+from shipguard.rules.shell import (
+    _has_unquoted_var,
     shell_001_eval_injection,
+    shell_002_unquoted_variable,
     shell_003_bash_c_interpolation,
     shell_004_sed_injection,
     shell_005_json_printf,
@@ -47,6 +49,59 @@ class TestShell003BashC:
         content = "bash -c 'echo hello'"
         findings = shell_003_bash_c_interpolation(Path("test.sh"), content)
         assert len(findings) == 0
+
+
+class TestShell002UnquotedVariable:
+    def test_skips_safe_braced_length_expansion(self):
+        content = 'echo ${#name}'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_skips_double_bracket_condition(self):
+        content = 'echo [[ $x ]]'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_skips_single_bracket_condition(self):
+        content = 'echo [ $x ]'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_skips_arithmetic_condition(self):
+        content = 'echo (( $x ))'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_skips_boolean_variable_command(self):
+        content = '$flag && echo ok'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_skips_command_substitution_argument(self):
+        content = '$(echo ok) $x'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_skips_heavily_quoted_line(self):
+        content = 'mkdir -p "$(dirname "$plan_file")" "$target"'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_skips_array_append(self):
+        content = 'args+=($name)'
+        findings = shell_002_unquoted_variable(Path("test.sh"), content)
+        assert len(findings) == 0
+
+
+class TestHasUnquotedVar:
+    def test_skips_escaped_dollar(self):
+        assert _has_unquoted_var(r'echo \$HOME') is False
+
+    def test_skips_special_var_and_digit(self):
+        assert _has_unquoted_var('echo $? $1') is False
+
+    def test_skips_braced_special_forms(self):
+        assert _has_unquoted_var('echo ${#x} ${arr[@]} ${arr[*]}') is False
 
 
 class TestShell004Sed:
@@ -111,6 +166,10 @@ class TestShell008SetEuo:
     def test_ignores_non_script(self):
         content = "echo hello"
         findings = shell_008_missing_set_euo(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_ignores_empty_content(self):
+        findings = shell_008_missing_set_euo(Path("test.sh"), "")
         assert len(findings) == 0
 
 

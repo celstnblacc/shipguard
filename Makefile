@@ -56,8 +56,8 @@ security-l2:
 		echo "⚠️  gitleaks not found. Install with: brew install gitleaks"; \
 	fi
 	@echo ""
-	@echo "Running RepoSec for secrets rules (SEC-001, SEC-002, SEC-003)..."
-	@reposec scan . --severity critical --rules SEC-001,SEC-002,SEC-003 --format text || true
+	@echo "Running ShipGuard for secrets rules (SEC-001, SEC-002, SEC-003)..."
+	@shipguard scan . --severity critical --rules SEC-001,SEC-002,SEC-003 --format text || true
 	@echo ""
 	@echo "✅ Layer 2 complete"
 
@@ -65,7 +65,7 @@ security-l2:
 security-l3:
 	@echo "📊 Layer 3: Running Full SAST Scan..."
 	@echo ""
-	@reposec scan .
+	@shipguard scan .
 	@echo ""
 	@echo "✅ Layer 3 complete"
 
@@ -109,13 +109,13 @@ security-l6:
 	@echo "🔒 Layer 6: Supply Chain Integrity Checks..."
 	@echo ""
 	@echo "Checking for unpinned Docker images (SC-001)..."
-	@reposec scan . --rules SC-001 --format text || true
+	@shipguard scan . --rules SC-001 --format text || true
 	@echo ""
 	@echo "Checking for unpinned Python dependencies (SC-002)..."
-	@reposec scan . --rules SC-002 --format text || true
+	@shipguard scan . --rules SC-002 --format text || true
 	@echo ""
 	@echo "Checking for npm/pnpm without lockfile (SC-003)..."
-	@reposec scan . --rules SC-003 --format text || true
+	@shipguard scan . --rules SC-003 --format text || true
 	@echo ""
 	@echo "Verifying lockfiles..."
 	@if [ -f "requirements.txt" ]; then echo "  ✓ requirements.txt found"; fi

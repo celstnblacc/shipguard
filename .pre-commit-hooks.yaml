@@ -1,7 +1,8 @@
-- id: reposec
-  name: RepoSec Security Scan
+---
+- id: shipguard
+  name: ShipGuard Security Scan
   description: Scan for common security vulnerabilities across languages
-  entry: reposec scan
+  entry: shipguard scan
   language: python
   types_or: [python, shell, javascript, yaml]
   pass_filenames: false

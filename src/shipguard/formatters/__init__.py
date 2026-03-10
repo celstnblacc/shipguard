@@ -1,10 +1,10 @@
-"""Output formatters for RepoSec scan results."""
+"""Output formatters for ShipGuard scan results."""
 
 from __future__ import annotations
 
-from reposec.formatters.json_fmt import format_json
-from reposec.formatters.markdown import format_markdown
-from reposec.formatters.terminal import format_terminal
+from shipguard.formatters.json_fmt import format_json
+from shipguard.formatters.markdown import format_markdown
+from shipguard.formatters.terminal import format_terminal
 
 __all__ = ["format_terminal", "format_json", "format_markdown", "get_formatter"]
 

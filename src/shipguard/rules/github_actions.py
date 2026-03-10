@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from reposec.models import Finding, Severity
-from reposec.rules import register
+from shipguard.models import Finding, Severity
+from shipguard.rules import register
 
 GHA_EXTS = [".yml", ".yaml"]
 

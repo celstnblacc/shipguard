@@ -1,11 +1,11 @@
-"""Rich terminal formatter for RepoSec scan results."""
+"""Rich terminal formatter for ShipGuard scan results."""
 
 from __future__ import annotations
 
 from rich.console import Console
 from rich.table import Table
 
-from reposec.models import ScanResult, Severity
+from shipguard.models import ScanResult, Severity
 
 SEVERITY_COLORS = {
     Severity.CRITICAL: "bold red",

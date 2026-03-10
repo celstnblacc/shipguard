@@ -1,4 +1,4 @@
-"""Data models for RepoSec findings and scan results."""
+"""Data models for ShipGuard findings and scan results."""
 
 from __future__ import annotations
 

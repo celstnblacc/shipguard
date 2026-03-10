@@ -1,4 +1,4 @@
-"""Shared test fixtures for RepoSec tests."""
+"""Shared test fixtures for ShipGuard tests."""
 
 from __future__ import annotations
 

@@ -1,0 +1,17 @@
+
+                               Security Findings                                
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳┓
+┃ Severity   ┃ Rule         ┃ File                                     ┃ Line ┃┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇┩
+│ CRITICAL   │ PY-003       │ src/app.py                               │   10 ││
+├────────────┼──────────────┼──────────────────────────────────────────┼──────┼┤
+│ HIGH       │ SEC-001      │ config/secrets.env                       │    2 ││
+└────────────┴──────────────┴──────────────────────────────────────────┴──────┴┘
+
+Fix hints:
+  PY-003: Replace eval() with ast.literal_eval() or a safe parser
+  SEC-001: Remove the key and rotate it in AWS IAM; use environment variables 
+instead
+
+Scan complete: 3 files scanned, 2 findings (1 critical, 1 high, 0 medium, 0 low)
+in 1.23s

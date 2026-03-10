@@ -1,0 +1,24 @@
+services:
+  shipguard-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shipguard-local:staging
+    container_name: shipguard-runner-staging
+    env_file:
+      - .env.staging
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "shipguard", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

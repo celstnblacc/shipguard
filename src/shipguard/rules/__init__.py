@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from reposec.models import Finding, Severity
+from shipguard.models import Finding, Severity
 
 # Type for a rule function: (file_path, content, config) -> list[Finding]
 RuleFunc = Callable[..., list[Finding]]
@@ -86,13 +86,13 @@ def get_rules_for_file(file_path: Path) -> list[RuleMeta]:
 
 def load_builtin_rules() -> None:
     """Import all builtin rule modules to trigger registration."""
-    from reposec.rules import config as _cfg  # noqa: F401
-    from reposec.rules import github_actions as _gha  # noqa: F401
-    from reposec.rules import javascript as _js  # noqa: F401
-    from reposec.rules import python as _py  # noqa: F401
-    from reposec.rules import secrets as _sec  # noqa: F401
-    from reposec.rules import shell as _sh  # noqa: F401
-    from reposec.rules import supply_chain as _sc  # noqa: F401
+    from shipguard.rules import config as _cfg  # noqa: F401
+    from shipguard.rules import github_actions as _gha  # noqa: F401
+    from shipguard.rules import javascript as _js  # noqa: F401
+    from shipguard.rules import python as _py  # noqa: F401
+    from shipguard.rules import secrets as _sec  # noqa: F401
+    from shipguard.rules import shell as _sh  # noqa: F401
+    from shipguard.rules import supply_chain as _sc  # noqa: F401
 
 
 def load_custom_rules(rule_dirs: list[Path]) -> int:
@@ -106,7 +106,7 @@ def load_custom_rules(rule_dirs: list[Path]) -> int:
         if not rule_dir.is_dir():
             continue
         for py_file in sorted(rule_dir.rglob("*.py")):
-            module_name = f"reposec_custom_{hash(py_file.resolve()) & 0xFFFFFFFF:x}"
+            module_name = f"shipguard_custom_{hash(py_file.resolve()) & 0xFFFFFFFF:x}"
             if module_name in sys.modules:
                 continue
             spec = importlib.util.spec_from_file_location(module_name, py_file)

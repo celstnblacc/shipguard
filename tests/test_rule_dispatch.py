@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from reposec.rules import get_rules_for_file, load_builtin_rules, load_custom_rules
+from shipguard.rules import get_rules_for_file, load_builtin_rules, load_custom_rules
 
 
 class TestRuleDispatch:
@@ -22,8 +22,8 @@ class TestRuleDispatch:
         custom_dir.mkdir()
         (custom_dir / "sample_rule.py").write_text(
             """
-from reposec.models import Finding, Severity
-from reposec.rules import register
+from shipguard.models import Finding, Severity
+from shipguard.rules import register
 
 @register(
     id="CUST-777",

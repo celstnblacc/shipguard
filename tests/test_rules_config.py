@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.config import (
+from shipguard.models import Severity
+from shipguard.rules.config import (
     cfg_001_auto_approve,
     cfg_002_env_committed,
     cfg_003_permissive_cors,

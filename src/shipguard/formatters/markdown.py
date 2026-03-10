@@ -1,14 +1,14 @@
-"""Markdown formatter for RepoSec scan results."""
+"""Markdown formatter for ShipGuard scan results."""
 
 from __future__ import annotations
 
-from reposec.models import ScanResult, Severity
+from shipguard.models import ScanResult, Severity
 
 
 def format_markdown(result: ScanResult, **_kwargs) -> str:
     """Format scan results as a Markdown report."""
     lines: list[str] = []
-    lines.append("# RepoSec Security Report\n")
+    lines.append("# ShipGuard Security Report\n")
 
     summary = result.summary
     lines.append("## Summary\n")
