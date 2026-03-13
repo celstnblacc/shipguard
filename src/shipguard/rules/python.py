@@ -1,4 +1,4 @@
-"""Python security rules (PY-001 through PY-009)."""
+"""Python security rules (PY-001 through PY-012)."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ PY_EXTS = [".py"]
     description="Detects zipfile.extractall() without member path validation (zip slip)",
     extensions=PY_EXTS,
     cwe_id="CWE-22",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
 )
 def py_001_zip_traversal(
     file_path: Path, content: str, config: object = None
@@ -55,6 +56,7 @@ def py_001_zip_traversal(
     description="Detects yaml.load() without SafeLoader, enabling code execution",
     extensions=PY_EXTS,
     cwe_id="CWE-502",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def py_002_yaml_unsafe(
     file_path: Path, content: str, config: object = None
@@ -88,6 +90,7 @@ def py_002_yaml_unsafe(
     description="Detects eval() or exec() calls that may execute untrusted code",
     extensions=PY_EXTS,
     cwe_id="CWE-95",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def py_003_eval_exec(
     file_path: Path, content: str, config: object = None
@@ -123,6 +126,7 @@ def py_003_eval_exec(
     description="Detects str.startswith() for path containment checks (CVE-2025-53110)",
     extensions=PY_EXTS,
     cwe_id="CWE-22",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
 )
 def py_004_startswith_path(
     file_path: Path, content: str, config: object = None
@@ -159,6 +163,7 @@ def py_004_startswith_path(
     description="Detects subprocess calls with shell=True",
     extensions=PY_EXTS,
     cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
 )
 def py_005_subprocess_shell(
     file_path: Path, content: str, config: object = None
@@ -201,6 +206,7 @@ def py_005_subprocess_shell(
     description="Detects hardcoded API keys, tokens, and passwords in Python source",
     extensions=PY_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def py_006_hardcoded_secrets(
     file_path: Path, content: str, config: object = None
@@ -246,6 +252,7 @@ def py_006_hardcoded_secrets(
     description="Detects f-strings or .format() used in SQL queries",
     extensions=PY_EXTS,
     cwe_id="CWE-89",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.5.1", "HIPAA-164.312"],
 )
 def py_007_sql_injection(
     file_path: Path, content: str, config: object = None
@@ -285,6 +292,7 @@ def py_007_sql_injection(
     description="Detects pickle.load/loads() which can execute arbitrary code",
     extensions=PY_EXTS,
     cwe_id="CWE-502",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def py_008_pickle_load(
     file_path: Path, content: str, config: object = None
@@ -317,6 +325,7 @@ def py_008_pickle_load(
     description="Detects tempfile.mktemp() usage which has a race condition",
     extensions=PY_EXTS,
     cwe_id="CWE-377",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def py_009_tempfile_mktemp(
     file_path: Path, content: str, config: object = None
@@ -337,6 +346,115 @@ def py_009_tempfile_mktemp(
                     message="tempfile.mktemp() has a race condition between name creation and file creation",
                     cwe_id="CWE-377",
                     fix_hint="Use tempfile.mkstemp() or tempfile.NamedTemporaryFile() instead",
+                )
+            )
+    return findings
+
+
+@register(
+    id="PY-010",
+    name="os-system-call",
+    severity=Severity.HIGH,
+    description="Detects os.system() calls which are vulnerable to shell injection",
+    extensions=PY_EXTS,
+    cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
+)
+def py_010_os_system(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    pattern = re.compile(r"\bos\.system\s*\(")
+    for i, line in enumerate(content.splitlines(), 1):
+        if line.strip().startswith("#"):
+            continue
+        if pattern.search(line):
+            findings.append(
+                Finding(
+                    rule_id="PY-010",
+                    severity=Severity.HIGH,
+                    file_path=file_path,
+                    line_number=i,
+                    line_content=line.rstrip(),
+                    message="os.system() is vulnerable to shell injection and lacks error handling",
+                    cwe_id="CWE-78",
+                    fix_hint="Use subprocess.run(args, shell=False) with a list of arguments instead",
+                )
+            )
+    return findings
+
+
+@register(
+    id="PY-011",
+    name="insecure-random-crypto",
+    severity=Severity.MEDIUM,
+    description="Detects use of the random module for cryptographic or security-sensitive purposes",
+    extensions=PY_EXTS,
+    cwe_id="CWE-338",
+    compliance_tags=["SOC2-CC6.1"],
+)
+def py_011_insecure_random(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    # Only flag if the file imports `random` (not `secrets`)
+    if "import random" not in content:
+        return findings
+    pattern = re.compile(
+        r"\brandom\.(random|randint|choice|shuffle|seed|sample|randbytes)\s*\("
+    )
+    crypto_context = re.compile(
+        r"(?:token|secret|password|key|salt|nonce|iv|csrf|session|auth)",
+        re.IGNORECASE,
+    )
+    lines = content.splitlines()
+    for i, line in enumerate(lines, 1):
+        if line.strip().startswith("#"):
+            continue
+        if pattern.search(line) and crypto_context.search(line):
+            findings.append(
+                Finding(
+                    rule_id="PY-011",
+                    severity=Severity.MEDIUM,
+                    file_path=file_path,
+                    line_number=i,
+                    line_content=line.rstrip(),
+                    message="random module is not cryptographically secure; do not use for secrets or tokens",
+                    cwe_id="CWE-338",
+                    fix_hint="Use the secrets module or os.urandom() for cryptographic randomness",
+                )
+            )
+    return findings
+
+
+@register(
+    id="PY-012",
+    name="tempfile-delete-false",
+    severity=Severity.MEDIUM,
+    description="Detects NamedTemporaryFile(delete=False) which leaves sensitive files on disk",
+    extensions=PY_EXTS,
+    cwe_id="CWE-377",
+    compliance_tags=["SOC2-CC6.1"],
+)
+def py_012_tempfile_delete_false(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    pattern = re.compile(r"NamedTemporaryFile\s*\([^)]*delete\s*=\s*False")
+    for i, line in enumerate(content.splitlines(), 1):
+        if line.strip().startswith("#"):
+            continue
+        if pattern.search(line):
+            findings.append(
+                Finding(
+                    rule_id="PY-012",
+                    severity=Severity.MEDIUM,
+                    file_path=file_path,
+                    line_number=i,
+                    line_content=line.rstrip(),
+                    message="NamedTemporaryFile(delete=False) leaves the file on disk after the handle is closed",
+                    cwe_id="CWE-377",
+                    fix_hint="Ensure manual cleanup in a finally block, or use delete=True (default)",
                 )
             )
     return findings

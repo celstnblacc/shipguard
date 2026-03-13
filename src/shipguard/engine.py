@@ -119,6 +119,77 @@ def _scan_file(
     return findings
 
 
+def scan_files(
+    files: list[Path],
+    target_dir: Path,
+    config: Config | None = None,
+    severity_threshold: Severity | None = None,
+    max_workers: int = 4,
+    include_rules: set[str] | None = None,
+    exclude_rules: set[str] | None = None,
+) -> ScanResult:
+    """Scan an explicit list of files (for incremental/staged scanning).
+
+    Args:
+        files: List of files to scan.
+        target_dir: Root directory (for context).
+        config: Configuration object. Uses defaults if None.
+        severity_threshold: Minimum severity to report.
+        max_workers: Number of parallel workers.
+        include_rules: Rule IDs to include (empty = all).
+        exclude_rules: Rule IDs to exclude.
+
+    Returns:
+        ScanResult with all findings.
+    """
+    if config is None:
+        config = Config()
+
+    load_builtin_rules()
+
+    threshold = severity_threshold or Severity(config.severity_threshold)
+    result = ScanResult()
+    include_rule_ids = include_rules or set()
+    excluded_rule_ids = set(config.disable_rules or []) | set(exclude_rules or set())
+
+    result.files_scanned = len(files)
+
+    from shipguard.rules import get_registry
+
+    registry_ids = set(get_registry().keys())
+    if include_rule_ids:
+        registry_ids &= include_rule_ids
+    registry_ids -= excluded_rule_ids
+    result.rules_applied = len(registry_ids)
+
+    all_findings: list[Finding] = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {
+            pool.submit(
+                _scan_file,
+                f,
+                config,
+                threshold,
+                include_rule_ids,
+                excluded_rule_ids,
+            ): f for f in files
+        }
+        for future in as_completed(futures):
+            try:
+                file_findings = future.result()
+                all_findings.extend(file_findings)
+            except Exception:
+                result.files_skipped += 1
+
+    all_findings.sort(
+        key=lambda f: (-f.severity.rank, str(f.file_path), f.line_number)
+    )
+    result.findings = all_findings
+    result.finish()
+    return result
+
+
 def scan(
     target_dir: Path,
     config: Config | None = None,

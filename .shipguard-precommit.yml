@@ -8,6 +8,8 @@ exclude_paths:
   - ".venv/**"
   - "venv/**"
 
-disable_rules: []
+# SC-005: docker run in security.yml is OWASP ZAP for DAST testing, not a production image
+disable_rules:
+  - SC-005
 custom_rules_dirs: []
 use_rust_secrets: false

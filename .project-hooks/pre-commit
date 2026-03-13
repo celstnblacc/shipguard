@@ -19,6 +19,12 @@ else
 fi
 
 echo "Using test runner: $PYTEST_CMD"
+# Ensure local src/ is importable in environments where editable .pth is not honored.
+if [ -n "$PYTHONPATH" ]; then
+    export PYTHONPATH="src:$PYTHONPATH"
+else
+    export PYTHONPATH="src"
+fi
 $PYTEST_CMD tests/ -q
 
 if [ $? -eq 0 ]; then

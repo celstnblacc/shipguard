@@ -7,3 +7,11 @@
   types_or: [python, shell, javascript, yaml]
   pass_filenames: false
   always_run: true
+
+- id: shipguard-staged
+  name: ShipGuard (staged files only)
+  language: python
+  entry: shipguard scan-staged
+  stages: [pre-commit]
+  pass_filenames: false
+  always_run: false

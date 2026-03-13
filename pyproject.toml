@@ -49,6 +49,7 @@ packages = ["src/shipguard"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 markers = [
     "performance: performance regression tests (usually gated by env var)",
     "mutation: mutation test harness tests (usually gated by env var)",

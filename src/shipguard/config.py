@@ -34,6 +34,11 @@ custom_rules_dirs: []
 # Optional: use Rust-accelerated secrets scanning (SEC-001/002/003)
 # Requires a built `shipguard-secrets` binary in PATH or SHIPGUARD_RUST_SECRETS_BIN.
 use_rust_secrets: false
+
+# Per-rule configuration overrides
+# rule_config:
+#   PY-011:
+#     skip_paths: ["tests/**", "scripts/seed_*.py"]
 """
 
 
@@ -45,6 +50,10 @@ class Config(BaseModel):
     disable_rules: list[str] = Field(default_factory=list)
     custom_rules_dirs: list[str] = Field(default_factory=list)
     use_rust_secrets: bool = Field(default=False)
+    rule_config: dict[str, dict] = Field(default_factory=dict)
+    external_tools: list[str] = Field(default_factory=list)
+    trufflehog_verify: bool = Field(default=False)
+    semgrep_config: str = Field(default="auto")
 
 
 def find_config(target_dir: Path) -> Path | None:

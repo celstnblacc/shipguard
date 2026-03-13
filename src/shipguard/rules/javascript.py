@@ -18,6 +18,7 @@ JS_EXTS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]
     description="Detects eval() usage in JavaScript/TypeScript production code",
     extensions=JS_EXTS,
     cwe_id="CWE-95",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_001_eval(
     file_path: Path, content: str, config: object = None
@@ -51,6 +52,7 @@ def js_001_eval(
     description="Detects path.join() without path containment verification",
     extensions=JS_EXTS,
     cwe_id="CWE-22",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_002_path_traversal(
     file_path: Path, content: str, config: object = None
@@ -91,6 +93,7 @@ def js_002_path_traversal(
     description="Detects fs.readdirSync/readdir without symlink checking",
     extensions=JS_EXTS,
     cwe_id="CWE-59",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_003_symlink_following(
     file_path: Path, content: str, config: object = None
@@ -131,6 +134,7 @@ def js_003_symlink_following(
     description="Detects deep merge operations without __proto__ protection",
     extensions=JS_EXTS,
     cwe_id="CWE-1321",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_004_prototype_pollution(
     file_path: Path, content: str, config: object = None
@@ -176,6 +180,7 @@ def js_004_prototype_pollution(
     description="Detects regex patterns susceptible to catastrophic backtracking (ReDoS)",
     extensions=JS_EXTS,
     cwe_id="CWE-1333",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_005_regex_dos(
     file_path: Path, content: str, config: object = None
@@ -214,6 +219,7 @@ def js_005_regex_dos(
     description="Detects innerHTML or dangerouslySetInnerHTML with dynamic content",
     extensions=JS_EXTS,
     cwe_id="CWE-79",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_006_xss_innerhtml(
     file_path: Path, content: str, config: object = None
@@ -252,6 +258,7 @@ def js_006_xss_innerhtml(
     description="Detects missing Content-Security-Policy in Express/Fastify apps",
     extensions=JS_EXTS,
     cwe_id="CWE-1021",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_007_no_csp(
     file_path: Path, content: str, config: object = None
@@ -292,6 +299,7 @@ def js_007_no_csp(
     description="Detects console.log with variables named secret/token/key/password",
     extensions=JS_EXTS,
     cwe_id="CWE-532",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def js_008_console_secrets(
     file_path: Path, content: str, config: object = None

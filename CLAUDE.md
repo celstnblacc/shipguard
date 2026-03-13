@@ -2,17 +2,19 @@
 
 ## Project Description
 
-**ShipGuard** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 48 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
+**ShipGuard** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 60 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
 
 **Key Features:**
-- 48 built-in security rules across 7 layers
-- Layer 3 (SAST): 34 core rules
-- Layer 2 (Secrets): 10 credential/token detection rules
-- Layer 6 (Supply Chain): 4 integrity checks
-- CLI tool for scanning repositories
-- Pre-commit hook integration
-- GitHub Action integration
-- Multiple output formats (terminal, JSON, markdown)
+- 60 built-in security rules across 7 layers
+- Layer 3 (SAST): 34 core rules (Python ×12, Shell ×9, JS ×8, Config ×5, GHA ×5 — includes CWE + SOC2/PCI/HIPAA compliance tags)
+- Layer 2 (Secrets): 15 credential/token detection rules (AWS, GCP, GitHub, Stripe, OpenAI, Anthropic, Slack, npm, HuggingFace, Azure, Twilio, SendGrid, Datadog, JWT)
+- Layer 6 (Supply Chain): 6 integrity checks (Docker pinning, dep pinning, lockfile, .gitignore, cosign, SBOM)
+- CLI tool for scanning repositories (`shipguard scan`, `shipguard scan-staged`)
+- SARIF output for GitHub Security tab integration
+- Pre-commit hook integration (full scan + staged-only)
+- GitHub Action integration with external tool wrappers (ShellCheck, Semgrep, TruffleHog, Trivy)
+- Multiple output formats (terminal, JSON, markdown, SARIF)
+- Per-rule configuration via `.shipguard.yml`
 
 **Technology Stack:**
 - Python 3.10+

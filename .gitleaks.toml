@@ -1,0 +1,14 @@
+# Gitleaks configuration for ShipGuard
+# Scans the full repository while excluding intentional test fixtures and build artifacts.
+
+title = "ShipGuard Gitleaks Config"
+
+[allowlist]
+description = "Exclude test fixtures (intentionally contain vulnerable patterns) and build artifacts"
+paths = [
+    "tests/fixtures/",
+    "dist/",
+    ".venv/",
+    "build/",
+    "*.egg-info/",
+]

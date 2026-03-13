@@ -1,4 +1,4 @@
-"""Secrets security rules (SEC-001 through SEC-010)."""
+"""Secrets security rules (SEC-001 through SEC-015)."""
 
 from __future__ import annotations
 
@@ -65,6 +65,7 @@ def _make_finding(
     description="Detects AWS access key ID (AKIA*) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_001_aws_key(
     file_path: Path, content: str, config: object = None
@@ -90,6 +91,7 @@ def sec_001_aws_key(
     description="Detects GCP API key (AIza*) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_002_gcp_key(
     file_path: Path, content: str, config: object = None
@@ -115,6 +117,7 @@ def sec_002_gcp_key(
     description="Detects GitHub personal access tokens (ghp_*, gho_*, ghu_*, ghs_*, ghr_*) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_003_github_token(
     file_path: Path, content: str, config: object = None
@@ -140,6 +143,7 @@ def sec_003_github_token(
     description="Detects Stripe live secret key (sk_live_*) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_004_stripe_key(
     file_path: Path, content: str, config: object = None
@@ -165,6 +169,7 @@ def sec_004_stripe_key(
     description="Detects OpenAI API keys (legacy sk- and new sk-proj-/sk-user-/sk-svcacct- formats)",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_005_openai_key(
     file_path: Path, content: str, config: object = None
@@ -195,6 +200,7 @@ def sec_005_openai_key(
     description="Detects Anthropic/Claude API keys (sk-ant-*) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_006_anthropic_key(
     file_path: Path, content: str, config: object = None
@@ -220,6 +226,7 @@ def sec_006_anthropic_key(
     description="Detects Slack bot/user/app tokens (xoxb-*, xoxp-*, xoxa-*, etc.) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_007_slack_token(
     file_path: Path, content: str, config: object = None
@@ -245,6 +252,7 @@ def sec_007_slack_token(
     description="Detects PEM private key headers (RSA, EC, DSA, OPENSSH) embedded in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-312",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_008_pem_private_key(
     file_path: Path, content: str, config: object = None
@@ -272,6 +280,7 @@ def sec_008_pem_private_key(
     description="Detects npm access tokens (npm_*) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_009_npm_token(
     file_path: Path, content: str, config: object = None
@@ -297,6 +306,7 @@ def sec_009_npm_token(
     description="Detects HuggingFace API tokens (hf_*) in files",
     extensions=SECRETS_EXTS,
     cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
 def sec_010_huggingface_token(
     file_path: Path, content: str, config: object = None
@@ -311,5 +321,145 @@ def sec_010_huggingface_token(
                 "SEC-010", Severity.HIGH, file_path, i, line.rstrip(),
                 "HuggingFace API token detected in file", "CWE-798",
                 "Revoke the token at huggingface.co/settings/tokens; use HUGGING_FACE_HUB_TOKEN env var",
+            ))
+    return findings
+
+
+@register(
+    id="SEC-011",
+    name="azure-storage-key",
+    severity=Severity.CRITICAL,
+    description="Detects Azure Storage account connection strings with embedded account keys",
+    extensions=SECRETS_EXTS,
+    cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
+)
+def sec_011_azure_storage_key(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    pattern = re.compile(
+        r"DefaultEndpointsProtocol=https?;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/=]{60,}"
+    )
+    for i, line in enumerate(content.splitlines(), 1):
+        if _skip_false_positive(line):
+            continue
+        for _ in pattern.finditer(line):
+            findings.append(_make_finding(
+                "SEC-011", Severity.CRITICAL, file_path, i, line.rstrip(),
+                "Azure Storage connection string with account key detected", "CWE-798",
+                "Rotate the key in Azure Portal; use managed identity or AZURE_STORAGE_CONNECTION_STRING env var",
+            ))
+    return findings
+
+
+@register(
+    id="SEC-012",
+    name="twilio-auth-token",
+    severity=Severity.CRITICAL,
+    description="Detects Twilio auth tokens hardcoded in files",
+    extensions=SECRETS_EXTS,
+    cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
+)
+def sec_012_twilio_token(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    pattern = re.compile(
+        r"(?:twilio[_\-]?auth[_\-]?token|authToken|auth_token)\s*[=:]\s*['\"]?[0-9a-f]{32}['\"]?",
+        re.IGNORECASE,
+    )
+    for i, line in enumerate(content.splitlines(), 1):
+        if _skip_false_positive(line):
+            continue
+        if pattern.search(line):
+            findings.append(_make_finding(
+                "SEC-012", Severity.CRITICAL, file_path, i, line.rstrip(),
+                "Twilio auth token detected in file", "CWE-798",
+                "Rotate the token at console.twilio.com; use TWILIO_AUTH_TOKEN env var",
+            ))
+    return findings
+
+
+@register(
+    id="SEC-013",
+    name="sendgrid-api-key",
+    severity=Severity.CRITICAL,
+    description="Detects SendGrid API keys (SG.*) in files",
+    extensions=SECRETS_EXTS,
+    cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
+)
+def sec_013_sendgrid_key(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    pattern = re.compile(r"SG\.[A-Za-z0-9_\-]{22,}\.[A-Za-z0-9_\-]{43,}")
+    for i, line in enumerate(content.splitlines(), 1):
+        if _skip_false_positive(line):
+            continue
+        for _ in pattern.finditer(line):
+            findings.append(_make_finding(
+                "SEC-013", Severity.CRITICAL, file_path, i, line.rstrip(),
+                "SendGrid API key detected in file", "CWE-798",
+                "Revoke the key at app.sendgrid.com/settings/api_keys; use SENDGRID_API_KEY env var",
+            ))
+    return findings
+
+
+@register(
+    id="SEC-014",
+    name="datadog-api-key",
+    severity=Severity.HIGH,
+    description="Detects Datadog API keys hardcoded in files",
+    extensions=SECRETS_EXTS,
+    cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
+)
+def sec_014_datadog_key(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    pattern = re.compile(
+        r"(?:dd_api_key|ddapikey|DATADOG_API_KEY|DD_API_KEY)\s*[=:]\s*['\"]?[0-9a-f]{32}['\"]?",
+        re.IGNORECASE,
+    )
+    for i, line in enumerate(content.splitlines(), 1):
+        if _skip_false_positive(line):
+            continue
+        if pattern.search(line):
+            findings.append(_make_finding(
+                "SEC-014", Severity.HIGH, file_path, i, line.rstrip(),
+                "Datadog API key detected in file", "CWE-798",
+                "Rotate the key in Datadog Organization Settings; use DD_API_KEY env var",
+            ))
+    return findings
+
+
+@register(
+    id="SEC-015",
+    name="hardcoded-jwt-secret",
+    severity=Severity.HIGH,
+    description="Detects hardcoded JWT signing secrets in source code",
+    extensions=SECRETS_EXTS,
+    cwe_id="CWE-798",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
+)
+def sec_015_jwt_secret(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    pattern = re.compile(
+        r"""(?:jwt_secret|JWT_SECRET|secret_key|SECRET_KEY|jwt_key|JWT_KEY)\s*[=:]\s*["'][^"']{8,}["']"""
+    )
+    for i, line in enumerate(content.splitlines(), 1):
+        if _skip_false_positive(line):
+            continue
+        if pattern.search(line):
+            findings.append(_make_finding(
+                "SEC-015", Severity.HIGH, file_path, i, line.rstrip(),
+                "Hardcoded JWT secret detected in source code", "CWE-798",
+                "Use a randomly generated secret loaded from an environment variable or secrets manager",
             ))
     return findings

@@ -8,6 +8,8 @@ from shipguard.rules.supply_chain import (
     sc_002_unpinned_python_dep,
     sc_003_npm_frozen_lockfile,
     sc_004_missing_gitignore_entries,
+    sc_005_missing_cosign,
+    sc_006_sbom_not_configured,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "supply_chain"
@@ -260,3 +262,100 @@ class TestSc004MissingGitignoreEntries:
         path = Path(".gitignore")
         findings = sc_004_missing_gitignore_entries(path, content)
         assert len(findings) == 0
+
+
+class TestSc005MissingCosign:
+    def test_sc_005_detects_docker_pull_without_cosign(self):
+        """Test that SC-005 flags docker pull without cosign verify."""
+        content = "#!/bin/bash\ndocker pull ubuntu:22.04\ndocker run ubuntu:22.04 echo hi\n"
+        path = Path("deploy.sh")
+        findings = sc_005_missing_cosign(path, content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SC-005"
+        assert findings[0].severity == Severity.HIGH
+
+    def test_sc_005_passes_when_cosign_verify_present(self):
+        """Test that SC-005 passes when cosign verify is in the file."""
+        content = "#!/bin/bash\ncosign verify ubuntu:22.04\ndocker pull ubuntu:22.04\n"
+        path = Path("deploy.sh")
+        findings = sc_005_missing_cosign(path, content)
+        assert len(findings) == 0
+
+    def test_sc_005_passes_when_no_docker_commands(self):
+        """Test that SC-005 passes when no docker pull/run in file."""
+        content = "#!/bin/bash\necho 'hello world'\n"
+        path = Path("script.sh")
+        findings = sc_005_missing_cosign(path, content)
+        assert len(findings) == 0
+
+    def test_sc_005_skips_commented_docker_pull(self):
+        """Test that SC-005 skips commented-out docker pull."""
+        content = "#!/bin/bash\n# docker pull ubuntu:latest\necho done\n"
+        path = Path("script.sh")
+        findings = sc_005_missing_cosign(path, content)
+        assert len(findings) == 0
+
+    def test_sc_005_detects_docker_run_without_cosign(self):
+        """Test that SC-005 flags docker run without cosign verify."""
+        content = "docker run nginx:latest /bin/sh\n"
+        path = Path("run.sh")
+        findings = sc_005_missing_cosign(path, content)
+        assert len(findings) == 1
+
+    def test_sc_005_works_on_yaml_files(self):
+        """Test that SC-005 works on YAML workflow files."""
+        content = """
+jobs:
+  deploy:
+    steps:
+      - run: docker pull myapp:latest
+"""
+        path = Path(".github/workflows/deploy.yml")
+        findings = sc_005_missing_cosign(path, content)
+        assert len(findings) == 1
+
+
+class TestSc006SbomNotConfigured:
+    def test_sc_006_detects_dockerfile_without_sbom(self):
+        """Test that SC-006 flags a Dockerfile without SBOM config."""
+        content = "FROM ubuntu:22.04\nRUN apt-get update\nCMD [\"bash\"]\n"
+        path = Path("Dockerfile")
+        findings = sc_006_sbom_not_configured(path, content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SC-006"
+        assert findings[0].severity == Severity.LOW
+
+    def test_sc_006_passes_with_syft(self):
+        """Test that SC-006 passes when syft is referenced."""
+        content = "FROM ubuntu:22.04\nRUN syft generate-sbom\n"
+        path = Path("Dockerfile")
+        findings = sc_006_sbom_not_configured(path, content)
+        assert len(findings) == 0
+
+    def test_sc_006_passes_with_cyclonedx(self):
+        """Test that SC-006 passes when cyclonedx is referenced."""
+        content = "FROM python:3.12\nRUN pip install cyclonedx-bom\n"
+        path = Path("Dockerfile")
+        findings = sc_006_sbom_not_configured(path, content)
+        assert len(findings) == 0
+
+    def test_sc_006_passes_with_opencontainers_label(self):
+        """Test that SC-006 passes when image source label is set."""
+        content = "FROM ubuntu:22.04\nLABEL org.opencontainers.image.source=https://github.com/org/repo\n"
+        path = Path("Dockerfile")
+        findings = sc_006_sbom_not_configured(path, content)
+        assert len(findings) == 0
+
+    def test_sc_006_skips_non_dockerfile(self):
+        """Test that SC-006 skips non-Dockerfile files."""
+        content = "FROM ubuntu:22.04\n"
+        path = Path("setup.sh")
+        findings = sc_006_sbom_not_configured(path, content)
+        assert len(findings) == 0
+
+    def test_sc_006_works_on_dockerfile_variant(self):
+        """Test that SC-006 works on Dockerfile.prod etc."""
+        content = "FROM ubuntu:22.04\nRUN echo hello\n"
+        path = Path("Dockerfile.prod")
+        findings = sc_006_sbom_not_configured(path, content)
+        assert len(findings) == 1

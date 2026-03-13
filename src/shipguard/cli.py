@@ -9,9 +9,11 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from typing import Annotated
+
 from shipguard import __version__
 from shipguard.config import DEFAULT_CONFIG_TEMPLATE, load_config
-from shipguard.engine import scan
+from shipguard.engine import scan, scan_files
 from shipguard.formatters import get_formatter
 from shipguard.models import Severity
 from shipguard.rules import get_registry, load_builtin_rules, load_custom_rules
@@ -62,7 +64,7 @@ def scan_cmd(
         ".", help="Directory to scan.", exists=True, file_okay=False, resolve_path=True,
     ),
     format: str = typer.Option(
-        "terminal", "--format", "-f", help="Output format: terminal, json, markdown.",
+        "terminal", "--format", "-f", help="Output format: terminal, json, markdown, sarif.",
     ),
     severity: str = typer.Option(
         None, "--severity", "-s",
@@ -88,6 +90,11 @@ def scan_cmd(
         None,
         "--exclude-rules",
         help="Comma-separated rule IDs to exclude.",
+    ),
+    with_external: bool = typer.Option(
+        False,
+        "--with-external/--no-external",
+        help="Run external tools (ShellCheck, Semgrep, TruffleHog, Trivy) and merge findings.",
     ),
 ) -> None:
     """Scan a directory for security vulnerabilities."""
@@ -125,6 +132,23 @@ def scan_cmd(
         include_rules=include_rule_ids,
         exclude_rules=exclude_rule_ids,
     )
+
+    if with_external:
+        from shipguard.integrations import run_shellcheck, run_semgrep, run_trufflehog, run_trivy
+        from shipguard.engine import _discover_files
+        all_files = _discover_files(path, config)
+        external_findings = []
+        external_findings.extend(run_shellcheck(all_files, path))
+        external_findings.extend(run_semgrep(path, config.semgrep_config))
+        external_findings.extend(run_trufflehog(path, config.trufflehog_verify))
+        external_findings.extend(run_trivy(path))
+        sev_threshold = threshold or Severity(config.severity_threshold)
+        for f in external_findings:
+            if f.severity >= sev_threshold:
+                result.findings.append(f)
+        result.findings.sort(
+            key=lambda f: (-f.severity.rank, str(f.file_path), f.line_number)
+        )
 
     try:
         formatter = get_formatter(format)
@@ -176,6 +200,7 @@ def list_rules(
                 "description": r.description,
                 "extensions": r.extensions,
                 "cwe_id": r.cwe_id,
+                "compliance_tags": r.compliance_tags,
             }
             for r in sorted(registry.values(), key=lambda r: r.id)
         ]
@@ -222,3 +247,74 @@ def init(
         raise typer.Exit(code=1)
     config_path.write_text(DEFAULT_CONFIG_TEMPLATE)
     console.print(f"[green]Created {config_path}[/green]")
+
+
+@app.command("scan-staged")
+def scan_staged_cmd(
+    path: Annotated[Path, typer.Argument(help="Repository root directory.")] = Path("."),
+    format: str = typer.Option(
+        "terminal", "--format", "-f", help="Output format: terminal, json, markdown, sarif.",
+    ),
+    severity: str = typer.Option(
+        "low", "--severity", "-s", help="Minimum severity: critical, high, medium, low.",
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Write output to file instead of stdout.",
+    ),
+) -> None:
+    """Scan only git-staged files (optimized for pre-commit hooks)."""
+    import subprocess as sp
+
+    resolved_path = path.resolve()
+    git_result = sp.run(
+        ["git", "diff", "--name-only", "--cached", "--diff-filter=ACMR"],
+        capture_output=True, text=True, cwd=str(resolved_path)
+    )
+    staged = [
+        resolved_path / f.strip()
+        for f in git_result.stdout.splitlines()
+        if f.strip()
+    ]
+    staged = [f for f in staged if f.is_file()]
+
+    if not staged:
+        typer.echo("No staged files to scan.")
+        raise typer.Exit(0)
+
+    try:
+        threshold = Severity(severity.lower())
+    except ValueError:
+        console.print(f"[red]Invalid severity: {severity}[/red]")
+        raise typer.Exit(code=1)
+
+    load_builtin_rules()
+    result = scan_files(
+        files=staged,
+        target_dir=resolved_path,
+        severity_threshold=threshold,
+    )
+
+    format = format.lower()
+    try:
+        formatter = get_formatter(format)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(code=1)
+
+    if format == "terminal":
+        if output:
+            text = formatter(result)
+            output.write_text(text)
+            console.print(f"Report written to {output}")
+        else:
+            formatter(result, console=console)
+    else:
+        text = formatter(result)
+        if output:
+            output.write_text(text)
+            console.print(f"Report written to {output}")
+        else:
+            typer.echo(text)
+
+    if result.findings:
+        raise typer.Exit(code=1)

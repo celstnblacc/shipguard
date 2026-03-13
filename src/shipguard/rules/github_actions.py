@@ -26,6 +26,7 @@ def _is_github_workflow(file_path: Path, content: str) -> bool:
     description="Detects injection of untrusted GitHub event data in run blocks",
     extensions=GHA_EXTS,
     cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
 def gha_001_workflow_injection(
     file_path: Path, content: str, config: object = None
@@ -71,6 +72,7 @@ def gha_001_workflow_injection(
     description="Detects actions pinned to branches instead of commit SHAs",
     extensions=GHA_EXTS,
     cwe_id="CWE-829",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
 def gha_002_unpinned_action(
     file_path: Path, content: str, config: object = None
@@ -110,6 +112,7 @@ def gha_002_unpinned_action(
     description="Detects overly broad permissions in GitHub Actions workflows",
     extensions=GHA_EXTS,
     cwe_id="CWE-250",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
 def gha_003_excessive_permissions(
     file_path: Path, content: str, config: object = None
@@ -142,6 +145,7 @@ def gha_003_excessive_permissions(
     description="Detects secrets being echoed to logs in GitHub Actions",
     extensions=GHA_EXTS,
     cwe_id="CWE-532",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
 def gha_004_secrets_in_log(
     file_path: Path, content: str, config: object = None
@@ -174,6 +178,7 @@ def gha_004_secrets_in_log(
     description="Detects pull_request_target with checkout of PR head (code injection risk)",
     extensions=GHA_EXTS,
     cwe_id="CWE-829",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
 def gha_005_pr_target(
     file_path: Path, content: str, config: object = None

@@ -15,6 +15,11 @@ from shipguard.rules.secrets import (
     sec_008_pem_private_key,
     sec_009_npm_token,
     sec_010_huggingface_token,
+    sec_011_azure_storage_key,
+    sec_012_twilio_token,
+    sec_013_sendgrid_key,
+    sec_014_datadog_key,
+    sec_015_jwt_secret,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "secrets"
@@ -289,4 +294,105 @@ class TestSec010HuggingFaceToken:
     def test_sec_010_skips_env_var(self):
         content = "token=$HF_TOKEN"
         findings = sec_010_huggingface_token(Path("test.sh"), content)
+        assert len(findings) == 0
+
+
+class TestSec011AzureStorageKey:
+    def test_sec_011_detects_connection_string(self):
+        key = "A" * 64 + "=="
+        content = f"conn=DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey={key}"
+        findings = sec_011_azure_storage_key(Path("test.env"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SEC-011"
+        assert findings[0].severity == Severity.CRITICAL
+
+    def test_sec_011_skips_env_var(self):
+        content = "conn=$AZURE_STORAGE_CONNECTION_STRING"
+        findings = sec_011_azure_storage_key(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_sec_011_skips_template_placeholder(self):
+        content = "conn=DefaultEndpointsProtocol=https;AccountName=<account>;AccountKey=<key>"
+        findings = sec_011_azure_storage_key(Path("test.env"), content)
+        assert len(findings) == 0
+
+
+class TestSec012TwilioToken:
+    def test_sec_012_detects_auth_token(self):
+        content = "twilio_auth_token=abcdef1234567890abcdef1234567890"
+        findings = sec_012_twilio_token(Path("test.env"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SEC-012"
+        assert findings[0].severity == Severity.CRITICAL
+
+    def test_sec_012_detects_camel_case(self):
+        content = "authToken: 'abcdef1234567890abcdef1234567890'"
+        findings = sec_012_twilio_token(Path("config.yml"), content)
+        assert len(findings) == 1
+
+    def test_sec_012_skips_env_var(self):
+        content = "auth_token=$TWILIO_AUTH_TOKEN"
+        findings = sec_012_twilio_token(Path("test.sh"), content)
+        assert len(findings) == 0
+
+
+class TestSec013SendgridKey:
+    def test_sec_013_detects_sendgrid_key(self):
+        content = "SENDGRID_API_KEY=SG." + "A" * 22 + "." + "B" * 43
+        findings = sec_013_sendgrid_key(Path("test.env"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SEC-013"
+        assert findings[0].severity == Severity.CRITICAL
+
+    def test_sec_013_skips_short_pattern(self):
+        content = "key=SG.short.key"
+        findings = sec_013_sendgrid_key(Path("test.env"), content)
+        assert len(findings) == 0
+
+    def test_sec_013_skips_env_var(self):
+        content = "key=$SENDGRID_API_KEY"
+        findings = sec_013_sendgrid_key(Path("test.sh"), content)
+        assert len(findings) == 0
+
+
+class TestSec014DatadogKey:
+    def test_sec_014_detects_dd_api_key(self):
+        content = "DD_API_KEY=abcdef1234567890abcdef1234567890"
+        findings = sec_014_datadog_key(Path("test.env"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SEC-014"
+        assert findings[0].severity == Severity.HIGH
+
+    def test_sec_014_detects_datadog_api_key(self):
+        content = "DATADOG_API_KEY=abcdef1234567890abcdef1234567890"
+        findings = sec_014_datadog_key(Path("test.env"), content)
+        assert len(findings) == 1
+
+    def test_sec_014_skips_env_var(self):
+        content = "key=$DD_API_KEY"
+        findings = sec_014_datadog_key(Path("test.sh"), content)
+        assert len(findings) == 0
+
+
+class TestSec015JwtSecret:
+    def test_sec_015_detects_jwt_secret(self):
+        content = 'JWT_SECRET="supersecretkey123"'
+        findings = sec_015_jwt_secret(Path("test.py"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "SEC-015"
+        assert findings[0].severity == Severity.HIGH
+
+    def test_sec_015_detects_secret_key(self):
+        content = "SECRET_KEY='my-django-secret-key-here'"
+        findings = sec_015_jwt_secret(Path("settings.py"), content)
+        assert len(findings) == 1
+
+    def test_sec_015_skips_env_var_reference(self):
+        content = "SECRET_KEY=$SECRET_KEY"
+        findings = sec_015_jwt_secret(Path("test.sh"), content)
+        assert len(findings) == 0
+
+    def test_sec_015_skips_short_value(self):
+        content = 'jwt_key="short"'
+        findings = sec_015_jwt_secret(Path("test.py"), content)
         assert len(findings) == 0

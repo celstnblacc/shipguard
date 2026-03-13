@@ -16,6 +16,7 @@ from shipguard.rules import register
     description="Detects directory-level auto-approval in IDE settings",
     extensions=[".json"],
     cwe_id="CWE-862",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4"],
 )
 def cfg_001_auto_approve(
     file_path: Path, content: str, config: object = None
@@ -57,6 +58,7 @@ def cfg_001_auto_approve(
     description="Detects .env files that may not be in .gitignore",
     extensions=[".env"],
     cwe_id="CWE-312",
+    compliance_tags=["SOC2-CC6.1", "PCI-3.4"],
 )
 def cfg_002_env_committed(
     file_path: Path, content: str, config: object = None
@@ -97,6 +99,7 @@ def cfg_002_env_committed(
     description="Detects Access-Control-Allow-Origin: * in configuration files",
     extensions=[".json", ".yml", ".yaml", ".toml", ".conf", ".cfg", ".ini", ".js", ".ts", ".py"],
     cwe_id="CWE-942",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def cfg_003_permissive_cors(
     file_path: Path, content: str, config: object = None
@@ -120,6 +123,92 @@ def cfg_003_permissive_cors(
                         message="Overly permissive CORS allows any origin to access resources",
                         cwe_id="CWE-942",
                         fix_hint="Restrict origins to specific trusted domains",
+                    )
+                )
+                break
+    return findings
+
+
+@register(
+    id="CFG-004",
+    name="weak-tls-configuration",
+    severity=Severity.HIGH,
+    description="Detects SSLv2/v3 or TLSv1.0/1.1 in configuration files",
+    extensions=[".conf", ".cfg", ".ini", ".yml", ".yaml", ".json"],
+    cwe_id="CWE-326",
+    compliance_tags=["SOC2-CC6.1", "PCI-6.5.4"],
+)
+def cfg_004_weak_tls(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    patterns = [
+        re.compile(r"\bSSLv[23]\b", re.IGNORECASE),
+        # Match TLSv1 (bare), TLSv1.0, TLSv1.1 but NOT TLSv1.2 or TLSv1.3
+        re.compile(r"\bTLSv1(?:\.0|\.1)?\b(?!\.[2-9])"),
+        re.compile(r"ssl_protocols\s+.*TLSv1(?:\.[01])?\b(?!\.[2-9])"),
+    ]
+    for i, line in enumerate(content.splitlines(), 1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        for pat in patterns:
+            if pat.search(line):
+                findings.append(
+                    Finding(
+                        rule_id="CFG-004",
+                        severity=Severity.HIGH,
+                        file_path=file_path,
+                        line_number=i,
+                        line_content=line.rstrip(),
+                        message="Weak TLS/SSL protocol version detected; TLSv1.0/1.1 and SSLv2/3 are deprecated",
+                        cwe_id="CWE-326",
+                        fix_hint="Use TLS 1.2+ only; set 'ssl_protocols TLSv1.2 TLSv1.3' in nginx or equivalent",
+                    )
+                )
+                break
+    return findings
+
+
+@register(
+    id="CFG-005",
+    name="overly-permissive-ssh",
+    severity=Severity.HIGH,
+    description="Detects overly permissive SSH configuration settings",
+    extensions=[".conf", ".cfg"],
+    cwe_id="CWE-732",
+    compliance_tags=["SOC2-CC6.1", "PCI-2.2"],
+)
+def cfg_005_permissive_ssh(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    # Only trigger for SSH config files
+    name = file_path.name.lower()
+    if "sshd_config" not in name and "ssh" not in name:
+        return findings
+
+    patterns = [
+        re.compile(r"PermitRootLogin\s+yes", re.IGNORECASE),
+        re.compile(r"PasswordAuthentication\s+yes", re.IGNORECASE),
+        re.compile(r"PermitEmptyPasswords\s+yes", re.IGNORECASE),
+    ]
+    for i, line in enumerate(content.splitlines(), 1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        for pat in patterns:
+            if pat.search(line):
+                findings.append(
+                    Finding(
+                        rule_id="CFG-005",
+                        severity=Severity.HIGH,
+                        file_path=file_path,
+                        line_number=i,
+                        line_content=line.rstrip(),
+                        message="Overly permissive SSH configuration detected",
+                        cwe_id="CWE-732",
+                        fix_hint="Set PermitRootLogin no and PasswordAuthentication no in sshd_config; use key-based auth",
                     )
                 )
                 break

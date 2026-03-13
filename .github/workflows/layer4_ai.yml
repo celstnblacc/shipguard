@@ -1,0 +1,65 @@
+name: Layer 4 - AI Security Review
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  layer-4-security-diff:
+    name: Layer 4 - Security-Focused Diff Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate security-focused diff summary
+        id: diff
+        run: |
+          git diff origin/main...HEAD -- '*.py' '*.js' '*.ts' '*.sh' '*.yml' '*.yaml' \
+            | grep -E '^\+[^+]' \
+            | grep -iE 'auth|password|token|secret|key|sql|exec|eval|shell|subprocess|pickle|yaml\.load|jwt|crypto|hash|sign|encrypt|decrypt|random|cookie|session|permission|privilege|role|admin|root' \
+            > /tmp/security_additions.txt || true
+
+          LINE_COUNT=$(wc -l < /tmp/security_additions.txt | tr -d ' ')
+          echo "line_count=$LINE_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Post security diff review prompt
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const fs = require('fs');
+            let additions = '';
+            try {
+              additions = fs.readFileSync('/tmp/security_additions.txt', 'utf8').trim();
+            } catch (e) {
+              additions = '(none)';
+            }
+
+            const lineCount = parseInt('${{ steps.diff.outputs.line_count }}') || 0;
+            const hasChanges = lineCount > 0;
+
+            const body = hasChanges
+              ? `## Layer 4: Security-Focused Diff Review\n\n` +
+                `**${lineCount} security-relevant line(s) detected in this PR.**\n\n` +
+                `<details><summary>Security-relevant additions (click to expand)</summary>\n\n` +
+                `\`\`\`diff\n${additions.slice(0, 3000)}${additions.length > 3000 ? '\n... (truncated)' : ''}\n\`\`\`\n</details>\n\n` +
+                `### Recommended review checklist\n` +
+                `- [ ] Authentication/authorization logic is correct\n` +
+                `- [ ] No secrets or credentials in code\n` +
+                `- [ ] SQL queries use parameterized statements\n` +
+                `- [ ] Input validation is present at trust boundaries\n` +
+                `- [ ] Cryptographic operations use approved algorithms\n` +
+                `- [ ] Error messages don't leak sensitive information\n\n` +
+                `> Consider using an AI tool (Claude, GPT-4) or a security architect for a deeper review of the above additions.`
+              : `## Layer 4: Security-Focused Diff Review\n\nNo security-sensitive patterns detected in this PR's additions.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });

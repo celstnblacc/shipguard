@@ -69,7 +69,7 @@ jobs:
           sudo install /tmp/gitleaks /usr/local/bin/gitleaks
 
       - name: Run Gitleaks
-        run: gitleaks detect --source src --no-git --redact --verbose
+        run: gitleaks detect --no-git --redact --verbose
   # Layer 2: Secrets - ShipGuard layer 2 specific rules
   layer-2-secrets-shipguard:
     name: Layer 2 - Secrets (ShipGuard Report)
@@ -88,7 +88,7 @@ jobs:
       - name: Run ShipGuard for Secrets (Layer 2, blocking)
         run: |
           shipguard scan . --severity critical \
-            --include-rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 \
+            --include-rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010,SEC-011,SEC-012,SEC-013,SEC-014,SEC-015 \
             --format json > layer2-report.json
           CRITICAL=$(python3 -c "import json; d=json.load(open('layer2-report.json')); print(sum(1 for f in d.get('findings',[]) if f['severity']=='critical'))")
           if [ "$CRITICAL" -gt 0 ]; then
@@ -132,6 +132,77 @@ jobs:
         with:
           name: layer3-sast-report
           path: layer3-report.json
+
+      - name: Run ShipGuard SARIF Scan
+        run: shipguard scan . --format sarif --output results.sarif
+        if: always()
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@f09c1c0a46b326c31cf5a0e0b80d2a83a13e6b26 # v3
+        with:
+          sarif_file: results.sarif
+        if: always()
+
+  layer-2-trufflehog:
+    name: Layer 2 - TruffleHog Entropy Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: 0
+      - name: Install TruffleHog
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \
+            | sh -s -- -b /usr/local/bin v3.88.1
+      - name: Run TruffleHog filesystem scan
+        run: |
+          trufflehog filesystem . --json --exclude-paths .gitleaks.toml > trufflehog-report.json 2>/dev/null || true
+      - name: Upload TruffleHog Report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: layer2-trufflehog-report
+          path: trufflehog-report.json
+
+  layer-3-external-sast:
+    name: Layer 3 - External SAST (ShellCheck + Semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install ShipGuard + external tools
+        run: |
+          pip install -e .
+          pip install semgrep
+          sudo apt-get install -y shellcheck
+      - name: Run ShipGuard with external tools (SARIF output)
+        run: shipguard scan . --with-external --format sarif --output external-sast.sarif || true
+      - name: Upload external SARIF
+        uses: github/codeql-action/upload-sarif@f09c1c0a46b326c31cf5a0e0b80d2a83a13e6b26 # v3
+        with:
+          sarif_file: external-sast.sarif
+        if: always()
+
+  layer-1-trivy:
+    name: Layer 1 - Filesystem Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Install Trivy
+        run: |
+          sudo apt-get install -y wget apt-transport-https gnupg
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update -y && sudo apt-get install -y trivy
+      - name: Run Trivy filesystem scan
+        run: trivy fs --format sarif --output trivy.sarif . || true
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@f09c1c0a46b326c31cf5a0e0b80d2a83a13e6b26 # v3
+        with:
+          sarif_file: trivy.sarif
+        if: always()
 
   # Layer 4: AI Reasoning - Comment reminder for manual review
   layer-4-ai-reasoning:
@@ -228,7 +299,7 @@ jobs:
   security-summary:
     name: Security Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [layer-1-python-deps, layer-2-secrets-gitleaks, layer-2-secrets-shipguard, layer-3-sast, layer-6-supply-chain]
+    needs: [layer-1-python-deps, layer-2-secrets-gitleaks, layer-2-secrets-shipguard, layer-3-sast, layer-6-supply-chain, layer-2-trufflehog, layer-3-external-sast, layer-1-trivy]
     if: always()
     steps:
       - name: Download all reports

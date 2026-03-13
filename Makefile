@@ -58,8 +58,8 @@ security-l2:
 		echo "⚠️  gitleaks not found. Install with: brew install gitleaks"; \
 	fi
 	@echo ""
-	@echo "Running ShipGuard for secrets rules (SEC-001 through SEC-010)..."
-	@shipguard scan . --severity critical --include-rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 --format terminal || true
+	@echo "Running ShipGuard for secrets rules (SEC-001 through SEC-015)..."
+	@shipguard scan . --severity critical --include-rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010,SEC-011,SEC-012,SEC-013,SEC-014,SEC-015 --format terminal || true
 	@echo ""
 	@echo "✅ Layer 2 complete"
 

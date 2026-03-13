@@ -25,6 +25,7 @@ class RuleMeta:
     extensions: list[str]
     cwe_id: str | None = None
     func: RuleFunc | None = field(default=None, repr=False)
+    compliance_tags: list[str] = field(default_factory=list)
 
 
 # Global rule registry
@@ -39,6 +40,7 @@ def register(
     description: str,
     extensions: list[str],
     cwe_id: str | None = None,
+    compliance_tags: list[str] | None = None,
 ) -> Callable[[RuleFunc], RuleFunc]:
     """Decorator to register a rule function."""
 
@@ -51,6 +53,7 @@ def register(
             extensions=extensions,
             cwe_id=cwe_id,
             func=func,
+            compliance_tags=compliance_tags or [],
         )
         _registry[id] = meta
         # Attach metadata to function for introspection

@@ -16,6 +16,7 @@ from shipguard.rules import register
     description="Detects Dockerfile FROM with :latest tag (unpinned base images)",
     extensions=["Dockerfile", ".dockerfile", "docker-compose.yml", "docker-compose.yaml"],
     cwe_id="CWE-829",
+    compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
 def sc_001_docker_latest(
     file_path: Path, content: str, config: object = None
@@ -48,6 +49,7 @@ def sc_001_docker_latest(
     description="Detects Python dependencies without version pins in requirements files",
     extensions=[".txt"],
     cwe_id="CWE-829",
+    compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
 def sc_002_unpinned_python_dep(
     file_path: Path, content: str, config: object = None
@@ -98,6 +100,7 @@ def sc_002_unpinned_python_dep(
     description="Detects npm/pnpm install without --frozen-lockfile or --ci flags in scripts",
     extensions=[".sh", ".yml", ".yaml"],
     cwe_id="CWE-829",
+    compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
 def sc_003_npm_frozen_lockfile(
     file_path: Path, content: str, config: object = None
@@ -139,6 +142,7 @@ _REQUIRED_GITIGNORE_ENTRIES = [".env", "*.key", "*.pem", "*.p12", "*.pfx"]
     description="Detects .gitignore files missing baseline entries that protect against committing secrets",
     extensions=[".gitignore"],
     cwe_id="CWE-312",
+    compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
 def sc_004_missing_gitignore_entries(
     file_path: Path, content: str, config: object = None
@@ -163,6 +167,80 @@ def sc_004_missing_gitignore_entries(
                 message=f".gitignore is missing secret-protection entries: {', '.join(missing)}",
                 cwe_id="CWE-312",
                 fix_hint=f"Add the following to .gitignore: {chr(10).join(missing)}",
+            )
+        )
+    return findings
+
+
+@register(
+    id="SC-005",
+    name="missing-cosign-verification",
+    severity=Severity.HIGH,
+    description="Detects docker pull/run without cosign verify for image integrity",
+    extensions=[".sh", ".bash", ".zsh", ".yml", ".yaml"],
+    cwe_id="CWE-829",
+    compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
+)
+def sc_005_missing_cosign(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    docker_pattern = re.compile(r"\bdocker\s+(?:pull|run)\b")
+    has_docker_pull_or_run = False
+
+    for line in content.splitlines():
+        if line.strip().startswith("#"):
+            continue
+        if docker_pattern.search(line):
+            has_docker_pull_or_run = True
+            break
+
+    if has_docker_pull_or_run and "cosign verify" not in content:
+        findings.append(
+            Finding(
+                rule_id="SC-005",
+                severity=Severity.HIGH,
+                file_path=file_path,
+                line_number=1,
+                line_content="(file uses docker pull/run without cosign verify)",
+                message="docker pull/run without cosign verify; image integrity is not checked",
+                cwe_id="CWE-829",
+                fix_hint="Add 'cosign verify <image>' before pulling/running images in production pipelines",
+            )
+        )
+    return findings
+
+
+@register(
+    id="SC-006",
+    name="sbom-not-configured",
+    severity=Severity.LOW,
+    description="Detects Dockerfiles without SBOM generation configuration",
+    extensions=["Dockerfile"],
+    cwe_id="CWE-1104",
+    compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
+)
+def sc_006_sbom_not_configured(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    # Only match files named "Dockerfile" or "Dockerfile.*"
+    name = file_path.name
+    if name != "Dockerfile" and not name.startswith("Dockerfile."):
+        return findings
+
+    sbom_indicators = ["syft", "cyclonedx", "sbom", "org.opencontainers.image.source"]
+    if not any(indicator in content for indicator in sbom_indicators):
+        findings.append(
+            Finding(
+                rule_id="SC-006",
+                severity=Severity.LOW,
+                file_path=file_path,
+                line_number=1,
+                line_content="(Dockerfile missing SBOM configuration)",
+                message="Dockerfile does not configure SBOM generation or image source label",
+                cwe_id="CWE-1104",
+                fix_hint="Generate an SBOM with 'syft' or 'cyclonedx-py' and attach it to your release artifacts",
             )
         )
     return findings

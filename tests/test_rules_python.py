@@ -13,6 +13,9 @@ from shipguard.rules.python import (
     py_007_sql_injection,
     py_008_pickle_load,
     py_009_tempfile_mktemp,
+    py_010_os_system,
+    py_011_insecure_random,
+    py_012_tempfile_delete_false,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "python"
@@ -142,6 +145,93 @@ class TestPY009TempfileMktemp:
     def test_ignores_mkstemp(self):
         content = "fd, path = tempfile.mkstemp()"
         findings = py_009_tempfile_mktemp(Path("test.py"), content)
+        assert len(findings) == 0
+
+
+class TestPY010OsSystem:
+    def test_detects_os_system(self):
+        content = "import os\nos.system('ls -la')"
+        findings = py_010_os_system(Path("test.py"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "PY-010"
+        assert findings[0].severity == Severity.HIGH
+
+    def test_detects_os_system_with_variable(self):
+        content = "os.system(cmd)"
+        findings = py_010_os_system(Path("test.py"), content)
+        assert len(findings) == 1
+
+    def test_ignores_comment(self):
+        content = "# os.system('dangerous')"
+        findings = py_010_os_system(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_ignores_subprocess(self):
+        content = "subprocess.run(['ls', '-la'], shell=False)"
+        findings = py_010_os_system(Path("test.py"), content)
+        assert len(findings) == 0
+
+
+class TestPY011InsecureRandom:
+    def test_detects_random_for_token(self):
+        content = "import random\ntoken = random.randint(0, 100000)"
+        findings = py_011_insecure_random(Path("test.py"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "PY-011"
+        assert findings[0].severity == Severity.MEDIUM
+
+    def test_detects_random_for_password(self):
+        content = "import random\npassword = random.choice(chars)"
+        findings = py_011_insecure_random(Path("test.py"), content)
+        assert len(findings) == 1
+
+    def test_detects_random_for_session_key(self):
+        content = "import random\nsession_key = random.random()"
+        findings = py_011_insecure_random(Path("test.py"), content)
+        assert len(findings) == 1
+
+    def test_ignores_non_crypto_random(self):
+        content = "import random\nindex = random.randint(0, 10)"
+        findings = py_011_insecure_random(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_ignores_without_random_import(self):
+        content = "import secrets\ntoken = secrets.token_hex(32)"
+        findings = py_011_insecure_random(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_ignores_comment(self):
+        content = "import random\n# token = random.randint(0, 100)"
+        findings = py_011_insecure_random(Path("test.py"), content)
+        assert len(findings) == 0
+
+
+class TestPY012TempfileDeleteFalse:
+    def test_detects_delete_false(self):
+        content = "f = tempfile.NamedTemporaryFile(delete=False)"
+        findings = py_012_tempfile_delete_false(Path("test.py"), content)
+        assert len(findings) == 1
+        assert findings[0].rule_id == "PY-012"
+        assert findings[0].severity == Severity.MEDIUM
+
+    def test_detects_delete_false_with_other_args(self):
+        content = "f = tempfile.NamedTemporaryFile(suffix='.tmp', delete=False)"
+        findings = py_012_tempfile_delete_false(Path("test.py"), content)
+        assert len(findings) == 1
+
+    def test_ignores_delete_true(self):
+        content = "f = tempfile.NamedTemporaryFile(delete=True)"
+        findings = py_012_tempfile_delete_false(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_ignores_default_no_delete_arg(self):
+        content = "f = tempfile.NamedTemporaryFile(suffix='.tmp')"
+        findings = py_012_tempfile_delete_false(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_ignores_comment(self):
+        content = "# f = tempfile.NamedTemporaryFile(delete=False)"
+        findings = py_012_tempfile_delete_false(Path("test.py"), content)
         assert len(findings) == 0
 
 
