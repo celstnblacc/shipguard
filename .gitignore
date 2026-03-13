@@ -42,6 +42,7 @@ rust/**/target/
 !.env.example
 *.key
 *.pem
+secrets.json
 *.p12
 *.pfx
 
