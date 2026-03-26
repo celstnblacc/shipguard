@@ -4,43 +4,49 @@
 
 **ShipGuard** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 60 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
 
+**Version:** 0.3.2
+**License:** Apache 2.0
+
 **Key Features:**
 - 60 built-in security rules across 7 layers
 - Layer 3 (SAST): 34 core rules (Python ×12, Shell ×9, JS ×8, Config ×5, GHA ×5 — includes CWE + SOC2/PCI/HIPAA compliance tags)
 - Layer 2 (Secrets): 15 credential/token detection rules (AWS, GCP, GitHub, Stripe, OpenAI, Anthropic, Slack, npm, HuggingFace, Azure, Twilio, SendGrid, Datadog, JWT)
 - Layer 6 (Supply Chain): 6 integrity checks (Docker pinning, dep pinning, lockfile, .gitignore, cosign, SBOM)
+- **Rust secrets scanner** (`rust/shipguard-secrets/`) — high-performance secrets scanning with Python parity tests
+- **External tool integrations** — ShellCheck, Semgrep, TruffleHog, Trivy (via `src/shipguard/integrations/`)
 - CLI tool for scanning repositories (`shipguard scan`, `shipguard scan-staged`)
 - SARIF output for GitHub Security tab integration
 - Pre-commit hook integration (full scan + staged-only)
-- GitHub Action integration with external tool wrappers (ShellCheck, Semgrep, TruffleHog, Trivy)
-- Multiple output formats (terminal, JSON, markdown, SARIF)
+- GitHub Action integration
+- Multiple output formats: terminal, JSON, markdown, SARIF
 - Per-rule configuration via `.shipguard.yml`
+- Entry point plugin system (`shipguard.rules` entry points for third-party rules)
 
 **Technology Stack:**
-- Python 3.10+
-- Typer (CLI framework)
-- Rich (terminal formatting)
+- Python 3.10+, Rust (secrets scanner crate)
+- Typer (CLI framework), Rich (terminal formatting)
 - PyYAML, Pydantic (config/data handling)
-- pytest (testing framework)
+- pytest + hypothesis (testing)
 - Hatchling (build system)
 
 ---
 
 ## Build Commands
 
-ShipGuard uses Hatchling as the build system. Use these commands:
-
 ```bash
-# Build the package (wheel)
-python -m build
-# or
-hatch build
-
-# Build in editable/development mode (recommended for development)
-pip install -e .
-
-# Build with dev dependencies
+# Install in editable/development mode (recommended)
 pip install -e ".[dev]"
+
+# Build the package (wheel)
+hatch build
+# or
+python -m build
+
+# Run as module
+python -m shipguard scan .
+
+# Build Rust secrets crate
+cd rust/shipguard-secrets && cargo build --release
 
 # Clean build artifacts
 rm -rf build/ dist/ *.egg-info __pycache__
@@ -60,11 +66,32 @@ pytest tests/ -v
 pytest tests/test_cli.py -v
 pytest tests/test_rules_secrets.py -v
 pytest tests/test_rules_supply_chain.py -v
+pytest tests/test_formatters_sarif.py -v
+pytest tests/test_rust_secrets.py -v
 ```
 
 **Run with coverage:**
 ```bash
 pytest tests/ --cov=src/shipguard --cov-report=html
+```
+
+**Run integration tests (require external tools installed):**
+```bash
+pytest tests/test_integrations_shellcheck.py -v
+pytest tests/test_integrations_semgrep.py -v
+pytest tests/test_integrations_trivy.py -v
+pytest tests/test_integrations_trufflehog.py -v
+```
+
+**Run property-based and mutation tests (gated by env var):**
+```bash
+pytest tests/test_property_based.py -v -m property
+pytest tests/test_mutation_harness.py -v -m mutation
+```
+
+**Run performance regression tests:**
+```bash
+pytest tests/test_performance_regression.py -v -m performance
 ```
 
 **Run a specific test:**
@@ -77,11 +104,6 @@ pytest tests/test_cli.py::TestScanCommand::test_scan_finds_vulnerabilities -v
 pytest tests/ -k "secrets" -v
 ```
 
-**Run quick smoke tests:**
-```bash
-pytest tests/test_cli.py::TestListRulesCommand -v
-```
-
 ---
 
 ## Project Structure
@@ -90,50 +112,96 @@ pytest tests/test_cli.py::TestListRulesCommand -v
 shipguard/
 ├── src/shipguard/                    # Main package
 │   ├── __init__.py
+│   ├── __main__.py                 # python -m shipguard entrypoint
 │   ├── cli.py                      # CLI entry point (Typer app)
 │   ├── engine.py                   # Scan engine logic
 │   ├── models.py                   # Data models (Finding, Severity, ScanResult)
 │   ├── config.py                   # Configuration handling
+│   ├── rust_secrets.py             # Python bridge to Rust secrets scanner
 │   ├── rules/                      # Security rules
 │   │   ├── __init__.py             # Rule registry and loader
-│   │   ├── config.py               # CFG rules
-│   │   ├── github_actions.py       # GHA rules
-│   │   ├── javascript.py           # JS rules
-│   │   ├── python.py               # PY rules
-│   │   ├── shell.py                # SHELL rules
-│   │   ├── secrets.py              # SEC rules (NEW)
-│   │   └── supply_chain.py         # SC rules (NEW)
-│   └── formatters/                 # Output formatters
-│       ├── terminal.py
-│       ├── json_fmt.py
-│       └── markdown.py
-├── tests/                          # Test suite
-│   ├── conftest.py                 # Pytest configuration
-│   ├── test_cli.py                 # CLI tests
-│   ├── test_rules_*.py             # Rule-specific tests
-│   └── fixtures/                   # Test data
-│       ├── shell/
-│       ├── python/
-│       ├── javascript/
-│       ├── github_actions/
-│       ├── config/
-│       ├── secrets/                # (NEW)
-│       └── supply_chain/           # (NEW)
-├── docs/                           # Documentation (NEW)
+│   │   ├── config.py               # CFG rules (×5)
+│   │   ├── github_actions.py       # GHA rules (×5)
+│   │   ├── javascript.py           # JS rules (×8)
+│   │   ├── python.py               # PY rules (×12)
+│   │   ├── shell.py                # SHELL rules (×9)
+│   │   ├── secrets.py              # SEC rules (×15)
+│   │   └── supply_chain.py         # SC rules (×6)
+│   ├── formatters/                 # Output formatters
+│   │   ├── __init__.py
+│   │   ├── terminal.py
+│   │   ├── json_fmt.py
+│   │   ├── markdown.py
+│   │   └── sarif.py                # SARIF output (GitHub Security tab)
+│   └── integrations/               # External tool wrappers
+│       ├── __init__.py
+│       ├── shellcheck.py
+│       ├── semgrep.py
+│       ├── trivy.py
+│       └── trufflehog.py
+├── rust/                           # Rust components
+│   └── shipguard-secrets/          # High-performance secrets scanning crate
+│       ├── Cargo.toml
+│       ├── Cargo.lock
+│       └── src/
+├── tests/                          # Test suite (35 files)
+│   ├── conftest.py
+│   ├── test_cli.py
+│   ├── test_cli_contract.py
+│   ├── test_engine.py
+│   ├── test_engine_extra.py
+│   ├── test_action_security.py
+│   ├── test_concurrency.py
+│   ├── test_config_compatibility.py
+│   ├── test_config_extra.py
+│   ├── test_formatters_extra.py
+│   ├── test_formatters_sarif.py
+│   ├── test_golden_snapshots.py
+│   ├── test_integration_minirepo.py
+│   ├── test_integrations_semgrep.py
+│   ├── test_integrations_shellcheck.py
+│   ├── test_integrations_trivy.py
+│   ├── test_integrations_trufflehog.py
+│   ├── test_models_extra.py
+│   ├── test_mutation_harness.py
+│   ├── test_parser_robustness.py
+│   ├── test_performance_regression.py
+│   ├── test_property_based.py
+│   ├── test_rule_dispatch.py
+│   ├── test_rules_config.py
+│   ├── test_rules_github_actions.py
+│   ├── test_rules_javascript.py
+│   ├── test_rules_python.py
+│   ├── test_rules_registry_extra.py
+│   ├── test_rules_secrets.py
+│   ├── test_rules_shell.py
+│   ├── test_rules_supply_chain.py
+│   ├── test_rust_python_parity.py
+│   ├── test_rust_secrets.py
+│   ├── test_scan_staged.py
+│   └── fixtures/                   # Test data (intentionally vulnerable)
+│       ├── shell/, python/, javascript/
+│       ├── github_actions/, config/
+│       ├── secrets/, supply_chain/
+│       └── snapshots/
+├── .github/workflows/
+│   ├── test.yml                    # CI — pytest
+│   ├── security.yml                # Security scan gate
+│   ├── layer4_ai.yml               # AI security layer
+│   ├── publish.yml                 # PyPI publish
+│   └── release.yml                 # Release automation
+├── docs/
 │   ├── 7_LAYER_SECURITY_MODEL.md
 │   ├── 7_LAYER_SECURITY_MODEL.html
 │   └── PIPELINE.md
-├── .github/
-│   └── workflows/
-│       ├── test.yml
-│       └── security.yml            # (NEW)
-├── .pre-commit-hooks.yaml          # Pre-commit hook definitions
-├── .pre-commit-config.yaml.template # (NEW)
-├── pyproject.toml                  # Project metadata and config
-├── README.md                        # User documentation
-├── CLAUDE.md                        # (THIS FILE)
-├── IMPLEMENTATION_SUMMARY.md       # (NEW)
-└── Makefile                        # (NEW)
+├── .pre-commit-hooks.yaml
+├── .pre-commit-config.yaml.template
+├── action.yml                      # GitHub Action definition
+├── pyproject.toml
+├── Makefile
+├── CONTRIBUTING.md
+├── SECURITY.md
+└── CLAUDE.md                       # (THIS FILE)
 ```
 
 ---
@@ -180,12 +248,8 @@ def rule_function(file_path: Path, content: str, config=None) -> list[Finding]:
 - Include fixtures for vulnerable and safe examples
 - Test normal cases, edge cases, and false positives
 - Use descriptive test names: `test_{rule_id}_{what_it_tests}`
-
-### Documentation
-- Update README.md when adding/modifying rules
-- Add docstrings to new functions
-- Include examples in comments for complex logic
-- Link to CWE definitions where appropriate
+- Property-based tests go in `test_property_based.py` (hypothesis)
+- Rust/Python parity tests go in `test_rust_python_parity.py`
 
 ---
 
@@ -194,17 +258,11 @@ def rule_function(file_path: Path, content: str, config=None) -> list[Finding]:
 ### Add a New Security Rule
 
 1. **Choose a category** (shell.py, python.py, javascript.py, github_actions.py, config.py, secrets.py, or supply_chain.py)
-
 2. **Implement the rule** using the @register decorator
-
 3. **Create test fixtures** in `tests/fixtures/{category}/vulnerable.{ext}` and `tests/fixtures/{category}/safe.{ext}`
-
 4. **Write tests** in `tests/test_rules_{category}.py`
-
 5. **Update the rule count** in `tests/test_cli.py` (test_list_rules_json)
-
 6. **Update README.md** with the new rule in the rules table
-
 7. **Run tests** to ensure everything passes:
    ```bash
    pytest tests/test_rules_{category}.py -v
@@ -226,19 +284,25 @@ make help             # See all available targets
 # Scan just the fixtures
 shipguard scan tests/fixtures/
 
+# Scan with SARIF output (for GitHub Security tab)
+shipguard scan . --format sarif --output results.sarif
+
 # Scan with JSON output
 shipguard scan tests/fixtures/ --format json
 
 # Filter by severity
 shipguard scan tests/fixtures/ --severity critical
+
+# Scan only staged files (pre-commit mode)
+shipguard scan-staged
 ```
 
-### Update Documentation
+### Check Rule Count
 
-- **Framework docs**: Edit `docs/7_LAYER_SECURITY_MODEL.md`
-- **Quick reference**: Edit `docs/PIPELINE.md`
-- **Interactive dashboard**: Edit `docs/7_LAYER_SECURITY_MODEL.html`
-- **User guide**: Edit `README.md`
+```bash
+shipguard list-rules --format json | python -c "import json,sys; print(len(json.load(sys.stdin)))"
+# Expected: 60
+```
 
 ---
 
@@ -248,7 +312,7 @@ shipguard scan tests/fixtures/ --severity critical
 
 1. **Run tests**: `pytest tests/ -v` — All tests must pass
 2. **Check syntax**: `python -m compileall src/shipguard`
-3. **Review rule counts**: `shipguard list-rules --format json | python -c "import json,sys; print(len(json.load(sys.stdin)))"` should match test expectations
+3. **Review rule counts**: rule count must match test expectations (currently 60)
 4. **Verify no hardcoded secrets**: `grep -r "password\|api_key\|secret" src/ | grep -v "test\|example"`
 5. **Update documentation** if adding/changing rules
 
@@ -263,18 +327,18 @@ shipguard scan tests/fixtures/ --severity critical
 - Unsafe shell `eval` (SHELL-001)
 - Unsafe eval in JavaScript (JS-001)
 - Untrusted data in GitHub Actions (GHA-001)
+- Placeholder secrets/keys for secret detection testing (SEC rules)
 
 **These are EXPECTED and necessary:**
 - Located in `tests/fixtures/` — clearly marked as test data
 - Used to verify ShipGuard detection works correctly
 - Should NOT be fixed or removed
-- ShipGuard correctly flags them as critical vulnerabilities
+- The `tests/fixtures/secrets/safe.yml` placeholder key is a false-positive already resolved on GitHub
 
 **During /ship pipeline:**
 - ShipGuard will report vulnerabilities in `tests/fixtures/`
-- This is expected behavior
-- Proceed with commit despite critical findings in fixtures
-- Production code in `src/shipguard/` should remain clean
+- This is expected behavior — proceed with commit
+- Production code in `src/shipguard/` must remain clean
 
 ### No Destructive Operations
 
@@ -285,46 +349,38 @@ shipguard scan tests/fixtures/ --severity critical
 - Never use absolute paths (use relative or environment variables)
 - Never hardcode usernames or personal paths
 
-### Pre-commit Hook
-
-Before each commit, this project runs:
-- All tests (pytest)
-- Syntax checks
-- Security scans (ShipGuard)
-
-If any fail, the commit is blocked. Fix the issues and try again.
-
 ---
 
 ## Troubleshooting
 
 ### "Module not found" errors
 ```bash
-# Ensure you're in the right environment
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
 ### Tests fail with import errors
 ```bash
-# Reinstall in development mode
 pip install -e . --force-reinstall
 ```
 
 ### Rule changes not reflecting
 ```bash
-# Clear Python cache
 find . -type d -name __pycache__ -exec rm -rf {} +
-# Reinstall
 pip install -e .
 ```
 
-### Pre-commit hook issues
+### Rust crate build fails
 ```bash
-# Install hooks
-pre-commit install
-# Test all files
-pre-commit run --all-files
+cd rust/shipguard-secrets
+cargo clean && cargo build --release
+```
+
+### Integration tests skipped (external tool missing)
+```bash
+# Install required tools
+brew install shellcheck semgrep
+# Trivy and TruffleHog via their install scripts (see docs/)
 ```
 
 ---
@@ -334,12 +390,14 @@ pre-commit run --all-files
 - **Main Project**: [ShipGuard on GitHub](https://github.com/celstnblacc/shipguard)
 - **7-Layer Framework**: See `docs/7_LAYER_SECURITY_MODEL.md`
 - **Pipeline Guide**: See `docs/PIPELINE.md`
-- **Implementation Details**: See `IMPLEMENTATION_SUMMARY.md`
 - **User Guide**: See `README.md`
+- **Contributing**: See `CONTRIBUTING.md`
+- **Security Policy**: See `SECURITY.md`
 - **Typer Docs**: https://typer.tiangolo.com/
 - **CWE List**: https://cwe.mitre.org/
 
 ---
 
-**Last Updated**: 2026-02-27
-**Maintained By**: DevOpsCelstn
+**Last Updated:** 2026-03-26
+**Version:** 0.3.2
+**Maintained By:** DevOpsCelstn
