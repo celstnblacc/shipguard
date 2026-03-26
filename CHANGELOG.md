@@ -69,3 +69,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Layer and category counts updated (`SEC-001..010`, `SC-001..004`)
   - Added README examples for `--include-rules` / `--exclude-rules`.
 - `IMPLEMENTATION_SUMMARY.md` verification guidance updated to expect 48 rules from `shipguard list-rules`.
+
+## [0.3.3] — 2026-03-26
+
+### Fixed
+- `supply_chain.py` SC-004: replaced f-string containing backslash expression
+  (invalid in Python <3.12) with string concatenation — fixes SyntaxError on
+  Python 3.10 and 3.11
+
+### Docs
+- `CLAUDE.md`: refreshed for v0.3.2 — added Rust secrets crate, integrations
+  module, SARIF formatter, full 35-file test suite, new CI workflows

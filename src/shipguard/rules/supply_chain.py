@@ -170,7 +170,7 @@ def sc_004_missing_gitignore_entries(
                 line_content=f"Missing entries: {', '.join(missing)}",
                 message=f".gitignore is missing secret-protection entries: {', '.join(missing)}",
                 cwe_id="CWE-312",
-                fix_hint=f"Add the following to .gitignore:\n{'\n'.join(missing)}",
+                fix_hint="Add the following to .gitignore:\n" + "\n".join(missing),
             )
         )
     return findings
