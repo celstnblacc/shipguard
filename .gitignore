@@ -53,3 +53,4 @@ docs/IMPLEMENTATION_SUMMARY.md
 !.env.staging.example
 .serena/
 excalidraw.log
+.shipguard/
