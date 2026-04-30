@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Optional
 
 from litellm import completion
 
@@ -22,8 +23,15 @@ Make sure the fixed code is syntactically valid and idiomatic.
 class AutoFixer:
     """Generates and applies fixes for security findings."""
 
-    def __init__(self, model: str = "anthropic/claude-3-5-sonnet-20241022"):
-        self.model = model
+    def __init__(self, model: Optional[str] = None):
+        if model:
+            self.model = model
+        elif os.environ.get("ANTHROPIC_API_KEY"):
+            self.model = "anthropic/claude-3-5-sonnet-20241022"
+        elif os.environ.get("OPENAI_API_KEY"):
+            self.model = "openai/gpt-4o"
+        else:
+            self.model = "anthropic/claude-3-5-sonnet-20241022"  # Default
 
     def fix(self, finding: Finding, apply: bool = False) -> bool:
         """Generates a fix for the finding and optionally applies it."""

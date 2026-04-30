@@ -377,7 +377,12 @@ def py_007_sql_injection(
         for _, match_captures in matches:
             for node in match_captures.get("fstring", []):
                 text = content[node.start_byte : node.end_byte]
-                if sql_keywords_re.search(text):
+                
+                # Only flag if it's an f-string or contains suspicious formatting
+                is_fstring = text.lower().startswith("f")
+                has_interpolation = "{" in text and "}" in text
+                
+                if (is_fstring or has_interpolation) and sql_keywords_re.search(text):
                     line_number = node.start_point[0] + 1
                     line_content = content.splitlines()[line_number - 1]
                     findings.append(

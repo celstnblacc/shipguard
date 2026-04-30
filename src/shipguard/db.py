@@ -54,9 +54,10 @@ class Database:
             
             # Mark findings not seen in this scan as potentially fixed
             seen_ids = [f"{f.rule_id}:{f.file_path}:{f.line_number}" for f in findings]
-            placeholders = ",".join("?" for _ in seen_ids)
             if seen_ids:
-                conn.execute(f"UPDATE findings SET status = 'fixed' WHERE id NOT IN ({placeholders}) AND status = 'open'", seen_ids)
+                placeholders = ",".join("?" for _ in seen_ids)
+                query = "UPDATE findings SET status = 'fixed' WHERE id NOT IN (" + placeholders + ") AND status = 'open'"
+                conn.execute(query, seen_ids)
             else:
                 conn.execute("UPDATE findings SET status = 'fixed' WHERE status = 'open'")
             
