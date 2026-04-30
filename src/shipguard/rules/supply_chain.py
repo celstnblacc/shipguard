@@ -18,9 +18,7 @@ from shipguard.rules import register
     cwe_id="CWE-829",
     compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
-def sc_001_docker_latest(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sc_001_docker_latest(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"FROM\s+\S+:latest", re.IGNORECASE)
     for i, line in enumerate(content.splitlines(), 1):
@@ -51,9 +49,7 @@ def sc_001_docker_latest(
     cwe_id="CWE-829",
     compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
-def sc_002_unpinned_python_dep(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sc_002_unpinned_python_dep(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Only check files matching requirements*.txt pattern
     name = file_path.name.lower()
@@ -102,9 +98,7 @@ def sc_002_unpinned_python_dep(
     cwe_id="CWE-829",
     compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
-def sc_003_npm_frozen_lockfile(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sc_003_npm_frozen_lockfile(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Match npm install or pnpm install/pnpm i that doesn't have frozen-lockfile or ci flags
     pattern = re.compile(
@@ -144,9 +138,7 @@ _REQUIRED_GITIGNORE_ENTRIES = [".env", "*.key", "*.pem", "*.p12", "*.pfx"]
     cwe_id="CWE-312",
     compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
-def sc_004_missing_gitignore_entries(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sc_004_missing_gitignore_entries(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     if file_path.name != ".gitignore":
         return findings
@@ -185,9 +177,7 @@ def sc_004_missing_gitignore_entries(
     cwe_id="CWE-829",
     compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
-def sc_005_missing_cosign(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sc_005_missing_cosign(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     docker_pattern = re.compile(r"\bdocker\s+(?:pull|run)\b")
     has_docker_pull_or_run = False
@@ -224,9 +214,7 @@ def sc_005_missing_cosign(
     cwe_id="CWE-1104",
     compliance_tags=["SOC2-CC7.2", "PCI-6.3"],
 )
-def sc_006_sbom_not_configured(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sc_006_sbom_not_configured(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Only match files named "Dockerfile" or "Dockerfile.*"
     name = file_path.name

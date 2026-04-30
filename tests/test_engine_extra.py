@@ -71,7 +71,7 @@ def test_scan_file_respects_inline_suppression(tmp_path, monkeypatch):
     p = tmp_path / "x.py"
     p.write_text("# shipguard:ignore CUST-SUP-1\nprint('x')\n")
 
-    def _func(file_path, content, config):
+    def _func(file_path, content, config, **kwargs):
         return [
             Finding(
                 rule_id="CUST-SUP-1",

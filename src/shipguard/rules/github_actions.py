@@ -28,9 +28,7 @@ def _is_github_workflow(file_path: Path, content: str) -> bool:
     cwe_id="CWE-78",
     compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
-def gha_001_workflow_injection(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def gha_001_workflow_injection(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     if not _is_github_workflow(file_path, content):
         return []
     findings: list[Finding] = []
@@ -74,9 +72,7 @@ def gha_001_workflow_injection(
     cwe_id="CWE-829",
     compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
-def gha_002_unpinned_action(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def gha_002_unpinned_action(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     if not _is_github_workflow(file_path, content):
         return []
     findings: list[Finding] = []
@@ -114,9 +110,7 @@ def gha_002_unpinned_action(
     cwe_id="CWE-250",
     compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
-def gha_003_excessive_permissions(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def gha_003_excessive_permissions(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     if not _is_github_workflow(file_path, content):
         return []
     findings: list[Finding] = []
@@ -147,9 +141,7 @@ def gha_003_excessive_permissions(
     cwe_id="CWE-532",
     compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
-def gha_004_secrets_in_log(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def gha_004_secrets_in_log(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     if not _is_github_workflow(file_path, content):
         return []
     findings: list[Finding] = []
@@ -180,9 +172,7 @@ def gha_004_secrets_in_log(
     cwe_id="CWE-829",
     compliance_tags=["SOC2-CC6.1", "PCI-6.3"],
 )
-def gha_005_pr_target(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def gha_005_pr_target(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     if not _is_github_workflow(file_path, content):
         return []
     findings: list[Finding] = []

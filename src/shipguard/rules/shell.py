@@ -20,9 +20,7 @@ SHELL_EXTS = [".sh", ".bash", ".zsh", ".ksh"]
     cwe_id="CWE-94",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_001_eval_injection(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_001_eval_injection(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r'\beval\s+["\']?\$')
     for i, line in enumerate(content.splitlines(), 1):
@@ -54,9 +52,7 @@ def shell_001_eval_injection(
     cwe_id="CWE-78",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_002_unquoted_variable(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_002_unquoted_variable(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Patterns that indicate safe contexts (no word splitting risk)
     safe_line_patterns = [
@@ -188,9 +184,7 @@ def _has_unquoted_var(line: str) -> bool:
     cwe_id="CWE-78",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_003_bash_c_interpolation(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_003_bash_c_interpolation(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r'bash\s+-c\s+"[^"]*\$')
     for i, line in enumerate(content.splitlines(), 1):
@@ -222,9 +216,7 @@ def shell_003_bash_c_interpolation(
     cwe_id="CWE-78",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_004_sed_injection(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_004_sed_injection(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # sed with variable in replacement: sed "s/foo/$VAR/" or sed 's/foo/'"$VAR"'/'
     pattern = re.compile(r'\bsed\s+.*s[/|,].*\$\{?\w+')
@@ -257,9 +249,7 @@ def shell_004_sed_injection(
     cwe_id="CWE-116",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_005_json_printf(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_005_json_printf(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # printf with JSON-like format string and %s
     pattern = re.compile(r"""printf\s+['"].*[{:].*%s""")
@@ -292,9 +282,7 @@ def shell_005_json_printf(
     cwe_id="CWE-78",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_006_unquoted_github_output(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_006_unquoted_github_output(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r">>\s*\$GITHUB_OUTPUT\b")
     for i, line in enumerate(content.splitlines(), 1):
@@ -323,9 +311,7 @@ def shell_006_unquoted_github_output(
     cwe_id="CWE-459",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_007_mktemp_no_cleanup(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_007_mktemp_no_cleanup(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     has_mktemp = False
     mktemp_line = 0
@@ -364,9 +350,7 @@ def shell_007_mktemp_no_cleanup(
     cwe_id="CWE-754",
     compliance_tags=["SOC2-CC6.1"],
 )
-def shell_008_missing_set_euo(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_008_missing_set_euo(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Only check files with shebangs (actual scripts)
     lines = content.splitlines()
@@ -402,9 +386,7 @@ def shell_008_missing_set_euo(
     compliance_tags=["SOC2-CC6.1"],
     supersedes=["PY-005"],
 )
-def shell_009_shell_true_subprocess(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def shell_009_shell_true_subprocess(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     line_pattern = re.compile(r"shell\s*=\s*True")
     in_subprocess = False

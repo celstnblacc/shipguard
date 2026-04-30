@@ -8,7 +8,9 @@
       "line_content": "result = eval(user_input)",
       "message": "eval() can execute arbitrary code if input is untrusted",
       "cwe_id": "CWE-95",
-      "fix_hint": "Replace eval() with ast.literal_eval() or a safe parser"
+      "fix_hint": "Replace eval() with ast.literal_eval() or a safe parser",
+      "is_false_positive": false,
+      "ai_triage_reason": null
     },
     {
       "rule_id": "SEC-001",
@@ -18,7 +20,9 @@
       "line_content": "aws_key=AKIA1234567890ABCDEF",
       "message": "AWS access key ID detected in file",
       "cwe_id": "CWE-798",
-      "fix_hint": "Remove the key and rotate it in AWS IAM; use environment variables instead"
+      "fix_hint": "Remove the key and rotate it in AWS IAM; use environment variables instead",
+      "is_false_positive": false,
+      "ai_triage_reason": null
     }
   ],
   "summary": {

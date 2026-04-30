@@ -67,9 +67,7 @@ def _make_finding(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_001_aws_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_001_aws_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"AKIA[0-9A-Z]{16}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -93,9 +91,7 @@ def sec_001_aws_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_002_gcp_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_002_gcp_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"AIza[0-9A-Za-z\-_]{35}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -119,9 +115,7 @@ def sec_002_gcp_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_003_github_token(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_003_github_token(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"(ghp_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9]{36,}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -145,9 +139,7 @@ def sec_003_github_token(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_004_stripe_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_004_stripe_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"sk_live_[0-9a-zA-Z]{24,}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -171,9 +163,7 @@ def sec_004_stripe_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_005_openai_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_005_openai_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # New project/user/service-account keys: sk-proj-*, sk-user-*, sk-svcacct-*
     # Legacy keys contain the base64 marker T3BlbkFJ in the middle
@@ -202,9 +192,7 @@ def sec_005_openai_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_006_anthropic_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_006_anthropic_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"sk-ant-(?:api\d+-|admin\d+-)?[A-Za-z0-9_\-]{80,}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -228,9 +216,7 @@ def sec_006_anthropic_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_007_slack_token(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_007_slack_token(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"(xoxb|xoxp|xoxa|xoxe|xoxr|xoxs)-[0-9A-Za-z\-]{10,}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -254,9 +240,7 @@ def sec_007_slack_token(
     cwe_id="CWE-312",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_008_pem_private_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_008_pem_private_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(
         r"-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----"
@@ -282,9 +266,7 @@ def sec_008_pem_private_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_009_npm_token(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_009_npm_token(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"npm_[A-Za-z0-9]{36,}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -308,9 +290,7 @@ def sec_009_npm_token(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_010_huggingface_token(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_010_huggingface_token(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"hf_[A-Za-z0-9]{34,}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -334,9 +314,7 @@ def sec_010_huggingface_token(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_011_azure_storage_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_011_azure_storage_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(
         r"DefaultEndpointsProtocol=https?;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/=]{60,}"
@@ -362,9 +340,7 @@ def sec_011_azure_storage_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_012_twilio_token(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_012_twilio_token(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(
         r"(?:twilio[_\-]?auth[_\-]?token|authToken|auth_token)\s*[=:]\s*['\"]?[0-9a-f]{32}['\"]?",
@@ -391,9 +367,7 @@ def sec_012_twilio_token(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_013_sendgrid_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_013_sendgrid_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"SG\.[A-Za-z0-9_\-]{22,}\.[A-Za-z0-9_\-]{43,}")
     for i, line in enumerate(content.splitlines(), 1):
@@ -417,9 +391,7 @@ def sec_013_sendgrid_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_014_datadog_key(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_014_datadog_key(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(
         r"(?:dd_api_key|ddapikey|DATADOG_API_KEY|DD_API_KEY)\s*[=:]\s*['\"]?[0-9a-f]{32}['\"]?",
@@ -446,9 +418,7 @@ def sec_014_datadog_key(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4", "HIPAA-164.312.a"],
 )
-def sec_015_jwt_secret(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def sec_015_jwt_secret(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(
         r"""(?:jwt_secret|JWT_SECRET|secret_key|SECRET_KEY|jwt_key|JWT_KEY)\s*[=:]\s*["'][^"']{8,}["']"""

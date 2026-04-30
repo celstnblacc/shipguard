@@ -1,6 +1,18 @@
-# ShipGuard
+# ShipGuard: The AI-Native Security Sentinel
 
-Reusable security audit tool for any repository. Scans shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files for **48 vulnerability patterns** across all 7 layers of a unified security pipeline.
+ShipGuard is an intelligent security sentinel designed to protect your repository from vulnerabilities through semantic analysis and AI reasoning. It moves beyond simple pattern matching by using Tree-sitter to understand the "intent" of your code, virtually eliminating false positives. With its built-in Layer 4 AI Triage, it automatically determines if a vulnerability is reachable or just dead code. The integrated Auto-Remediation engine can autonomously generate and apply secure code patches to fix findings on the fly. As an MCP-native tool, it serves as a security sense-organ for AI agents like Claude and Cursor, providing a high-performance Rust core for instantaneous workspace audits.
+
+## 🚀 The Sentinel Experience
+
+### 📺 Demo
+Run `shipguard scan --ai-triage` to see the Sentinel reason about your code in real-time. Watch as it dismisses safely handled patterns and focuses only on exploitable risks.
+
+### 🧙 Wizard (Getting Started)
+To initialize the Sentinel in your project, simply run:
+```bash
+shipguard init
+```
+This wizard will guide you through setting up your `.shipguard.yml` and configuring AI triage for your specific tech stack.
 
 ## Install
 
@@ -144,7 +156,7 @@ Exit code 1 (findings detected)
 
 > **Note:** This section is for ShipGuard maintainers running the full go-live pipeline. Regular users do not need Docker or staging to use ShipGuard.
 
-Use the helper script to create a local staging target for `go-live`/`infra-probe` verification:
+Use the helper script to create a local staging target for `/golive`/`/infra-probe` verification:
 
 ```bash
 # Start local staging and wait for health

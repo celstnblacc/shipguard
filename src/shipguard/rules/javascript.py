@@ -20,9 +20,7 @@ JS_EXTS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]
     cwe_id="CWE-95",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_001_eval(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_001_eval(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"\beval\s*\(")
     for i, line in enumerate(content.splitlines(), 1):
@@ -54,9 +52,7 @@ def js_001_eval(
     cwe_id="CWE-22",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_002_path_traversal(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_002_path_traversal(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     join_pattern = re.compile(r"\bpath\.join\s*\(")
     lines = content.splitlines()
@@ -95,9 +91,7 @@ def js_002_path_traversal(
     cwe_id="CWE-59",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_003_symlink_following(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_003_symlink_following(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     readdir_pattern = re.compile(r"\bfs\.(?:readdirSync|readdir)\s*\(")
     lines = content.splitlines()
@@ -136,9 +130,7 @@ def js_003_symlink_following(
     cwe_id="CWE-1321",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_004_prototype_pollution(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_004_prototype_pollution(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Detect custom deep merge functions or Object.assign with spread
     merge_pattern = re.compile(
@@ -182,9 +174,7 @@ def js_004_prototype_pollution(
     cwe_id="CWE-1333",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_005_regex_dos(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_005_regex_dos(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Patterns with nested quantifiers: (a+)+ , (a*)*,  (a|b+)+ etc.
     regex_def = re.compile(r"""(?:new\s+RegExp\s*\(\s*['"]|/)(.*?)(?:['"]\s*\)|/[gimsuy]*)""")
@@ -221,9 +211,7 @@ def js_005_regex_dos(
     cwe_id="CWE-79",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_006_xss_innerhtml(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_006_xss_innerhtml(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     patterns = [
         re.compile(r"\.innerHTML\s*=\s*(?!['\"]\s*['\"]\s*;)"),
@@ -260,9 +248,7 @@ def js_006_xss_innerhtml(
     cwe_id="CWE-1021",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_007_no_csp(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_007_no_csp(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Check if this is an Express/Fastify app
     has_server = bool(
@@ -301,9 +287,7 @@ def js_007_no_csp(
     cwe_id="CWE-532",
     compliance_tags=["SOC2-CC6.1"],
 )
-def js_008_console_secrets(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def js_008_console_secrets(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(
         r"\bconsole\.(?:log|info|debug|warn|error)\s*\([^)]*\b(?:secret|token|key|password|apiKey|api_key|credential)\b",

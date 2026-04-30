@@ -20,9 +20,7 @@ PY_EXTS = [".py"]
     cwe_id="CWE-22",
     compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
 )
-def py_001_zip_traversal(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_001_zip_traversal(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"\.extractall\s*\(")
     lines = content.splitlines()
@@ -59,27 +57,66 @@ def py_001_zip_traversal(
     compliance_tags=["SOC2-CC6.1"],
 )
 def py_002_yaml_unsafe(
-    file_path: Path, content: str, config: object = None
+    file_path: Path, content: str, config: object = None, **kwargs
 ) -> list[Finding]:
     findings: list[Finding] = []
-    pattern = re.compile(r"\byaml\.load\s*\(")
-    safe_pattern = re.compile(r"Loader\s*=\s*(SafeLoader|yaml\.SafeLoader|CSafeLoader|yaml\.CSafeLoader)")
-    for i, line in enumerate(content.splitlines(), 1):
-        if line.strip().startswith("#"):
-            continue
-        if pattern.search(line) and not safe_pattern.search(line):
-            findings.append(
-                Finding(
-                    rule_id="PY-002",
-                    severity=Severity.CRITICAL,
-                    file_path=file_path,
-                    line_number=i,
-                    line_content=line.rstrip(),
-                    message="yaml.load() without SafeLoader allows arbitrary code execution",
-                    cwe_id="CWE-502",
-                    fix_hint="Use yaml.safe_load() or yaml.load(data, Loader=yaml.SafeLoader)",
+    tree = kwargs.get("tree")
+
+    if tree:
+        # Semantic Analysis
+        query_scm = """
+        (call
+          function: (attribute
+            object: (identifier) @obj
+            attribute: (identifier) @method)
+          arguments: (argument_list) @args
+          (#eq? @obj "yaml")
+          (#eq? @method "load"))
+        """
+        from shipguard.semantic import SemanticEngine
+        matches = SemanticEngine.query(tree, query_scm)
+        
+        for _, match_captures in matches:
+            # Check if Loader=SafeLoader is present in arguments
+            args_node = match_captures.get("args", [None])[0]
+            if args_node:
+                args_text = content[args_node.start_byte : args_node.end_byte]
+                if "SafeLoader" not in args_text and "safe_load" not in args_text:
+                    node = match_captures.get("method")[0]
+                    line_number = node.start_point[0] + 1
+                    line_content = content.splitlines()[line_number - 1]
+                    findings.append(
+                        Finding(
+                            rule_id="PY-002",
+                            severity=Severity.CRITICAL,
+                            file_path=file_path,
+                            line_number=line_number,
+                            line_content=line_content.rstrip(),
+                            message="yaml.load() without SafeLoader allows arbitrary code execution",
+                            cwe_id="CWE-502",
+                            fix_hint="Use yaml.safe_load() or yaml.load(data, Loader=yaml.SafeLoader)",
+                        )
+                    )
+    else:
+        # Fallback to Regex
+        pattern = re.compile(r"\byaml\.load\s*\(")
+        safe_pattern = re.compile(r"Loader\s*=\s*(SafeLoader|yaml\.SafeLoader|CSafeLoader|yaml\.CSafeLoader)")
+        for i, line in enumerate(content.splitlines(), 1):
+            if line.strip().startswith("#"):
+                continue
+            if pattern.search(line) and not safe_pattern.search(line):
+                findings.append(
+                    Finding(
+                        rule_id="PY-002",
+                        severity=Severity.CRITICAL,
+                        file_path=file_path,
+                        line_number=i,
+                        line_content=line.rstrip(),
+                        message="yaml.load() without SafeLoader allows arbitrary code execution",
+                        cwe_id="CWE-502",
+                        fix_hint="Use yaml.safe_load() or yaml.load(data, Loader=yaml.SafeLoader)",
+                    )
                 )
-            )
     return findings
 
 
@@ -93,29 +130,61 @@ def py_002_yaml_unsafe(
     compliance_tags=["SOC2-CC6.1"],
 )
 def py_003_eval_exec(
-    file_path: Path, content: str, config: object = None
+    file_path: Path, content: str, config: object = None, **kwargs
 ) -> list[Finding]:
     findings: list[Finding] = []
-    pattern = re.compile(r"\b(eval|exec)\s*\(")
-    for i, line in enumerate(content.splitlines(), 1):
-        stripped = line.strip()
-        if stripped.startswith("#"):
-            continue
-        m = pattern.search(line)
-        if m:
-            func = m.group(1)
-            findings.append(
-                Finding(
-                    rule_id="PY-003",
-                    severity=Severity.CRITICAL,
-                    file_path=file_path,
-                    line_number=i,
-                    line_content=line.rstrip(),
-                    message=f"{func}() can execute arbitrary code if input is untrusted",
-                    cwe_id="CWE-95",
-                    fix_hint=f"Replace {func}() with ast.literal_eval() or a safe parser",
+    tree = kwargs.get("tree")
+
+    if tree:
+        # Semantic Analysis using Tree-sitter
+        query_scm = """
+        (call
+          function: (identifier) @func
+          (#match? @func "^(eval|exec)$"))
+        """
+        from shipguard.semantic import SemanticEngine
+        matches = SemanticEngine.query(tree, query_scm)
+        
+        for pattern_index, match_captures in matches:
+            nodes = match_captures.get("func", [])
+            for node in nodes:
+                func_name = content[node.start_byte : node.end_byte]
+                line_number = node.start_point[0] + 1
+                line_content = content.splitlines()[line_number - 1]
+                findings.append(
+                    Finding(
+                        rule_id="PY-003",
+                        severity=Severity.CRITICAL,
+                        file_path=file_path,
+                        line_number=line_number,
+                        line_content=line_content.rstrip(),
+                        message=f"{func_name}() can execute arbitrary code if input is untrusted",
+                        cwe_id="CWE-95",
+                        fix_hint=f"Replace {func_name}() with ast.literal_eval() or a safe parser",
+                    )
                 )
-            )
+    else:
+        # Fallback to Regex Analysis
+        pattern = re.compile(r"\b(eval|exec)\s*\(")
+        for i, line in enumerate(content.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            m = pattern.search(line)
+            if m:
+                func = m.group(1)
+                findings.append(
+                    Finding(
+                        rule_id="PY-003",
+                        severity=Severity.CRITICAL,
+                        file_path=file_path,
+                        line_number=i,
+                        line_content=line.rstrip(),
+                        message=f"{func}() can execute arbitrary code if input is untrusted",
+                        cwe_id="CWE-95",
+                        fix_hint=f"Replace {func}() with ast.literal_eval() or a safe parser",
+                    )
+                )
     return findings
 
 
@@ -128,9 +197,7 @@ def py_003_eval_exec(
     cwe_id="CWE-22",
     compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
 )
-def py_004_startswith_path(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_004_startswith_path(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Match path.startswith(, base_path.startswith(, my_dir.startswith(,
     # str(p).startswith(, p.resolve().startswith(.
@@ -171,36 +238,73 @@ def py_004_startswith_path(
     compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
 )
 def py_005_subprocess_shell(
-    file_path: Path, content: str, config: object = None
+    file_path: Path, content: str, config: object = None, **kwargs
 ) -> list[Finding]:
     findings: list[Finding] = []
-    pattern = re.compile(r"\bsubprocess\.\w+\(")
-    shell_pattern = re.compile(r"shell\s*=\s*True")
-    lines = content.splitlines()
-    for i, line in enumerate(lines, 1):
-        if line.strip().startswith("#"):
-            continue
-        if pattern.search(line):
-            # Check this line and next few lines for shell=True
-            window = "\n".join(lines[i - 1 : min(i + 4, len(lines))])
-            if shell_pattern.search(window):
-                shell_line = i
-                for j in range(i - 1, min(i + 4, len(lines))):
-                    if shell_pattern.search(lines[j]):
-                        shell_line = j + 1
-                        break
-                findings.append(
-                    Finding(
-                        rule_id="PY-005",
-                        severity=Severity.HIGH,
-                        file_path=file_path,
-                        line_number=shell_line,
-                        line_content=lines[shell_line - 1].rstrip(),
-                        message="subprocess with shell=True is vulnerable to shell injection",
-                        cwe_id="CWE-78",
-                        fix_hint="Use shell=False and pass arguments as a list",
-                    )
+    tree = kwargs.get("tree")
+
+    if tree:
+        # Semantic Analysis
+        query_scm = """
+        (call
+          function: (attribute
+            object: (identifier) @obj
+            attribute: (identifier) @method)
+          arguments: (argument_list
+            (keyword_argument
+              name: (identifier) @arg_name
+              value: (true) @arg_val))
+          (#eq? @obj "subprocess")
+          (#eq? @arg_name "shell"))
+        """
+        from shipguard.semantic import SemanticEngine
+        matches = SemanticEngine.query(tree, query_scm)
+        
+        for _, match_captures in matches:
+            node = match_captures.get("arg_val")[0]
+            line_number = node.start_point[0] + 1
+            line_content = content.splitlines()[line_number - 1]
+            findings.append(
+                Finding(
+                    rule_id="PY-005",
+                    severity=Severity.HIGH,
+                    file_path=file_path,
+                    line_number=line_number,
+                    line_content=line_content.rstrip(),
+                    message="subprocess with shell=True is vulnerable to shell injection",
+                    cwe_id="CWE-78",
+                    fix_hint="Use shell=False and pass arguments as a list",
                 )
+            )
+    else:
+        # Fallback to Regex
+        pattern = re.compile(r"\bsubprocess\.\w+\(")
+        shell_pattern = re.compile(r"shell\s*=\s*True")
+        lines = content.splitlines()
+        for i, line in enumerate(lines, 1):
+            if line.strip().startswith("#"):
+                continue
+            if pattern.search(line):
+                # Check this line and next few lines for shell=True
+                window = "\n".join(lines[i - 1 : min(i + 4, len(lines))])
+                if shell_pattern.search(window):
+                    shell_line = i
+                    for j in range(i - 1, min(i + 4, len(lines))):
+                        if shell_pattern.search(lines[j]):
+                            shell_line = j + 1
+                            break
+                    findings.append(
+                        Finding(
+                            rule_id="PY-005",
+                            severity=Severity.HIGH,
+                            file_path=file_path,
+                            line_number=shell_line,
+                            line_content=lines[shell_line - 1].rstrip(),
+                            message="subprocess with shell=True is vulnerable to shell injection",
+                            cwe_id="CWE-78",
+                            fix_hint="Use shell=False and pass arguments as a list",
+                        )
+                    )
     return findings
 
 
@@ -213,9 +317,7 @@ def py_005_subprocess_shell(
     cwe_id="CWE-798",
     compliance_tags=["SOC2-CC6.1"],
 )
-def py_006_hardcoded_secrets(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_006_hardcoded_secrets(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     patterns = [
         (re.compile(r"""(?:api_key|apikey|api_secret|secret_key|auth_token|access_token|password)\s*=\s*["'][^"']{8,}["']""", re.IGNORECASE), "hardcoded secret"),
@@ -260,33 +362,87 @@ def py_006_hardcoded_secrets(
     compliance_tags=["SOC2-CC6.1", "PCI-6.5.1", "HIPAA-164.312"],
 )
 def py_007_sql_injection(
-    file_path: Path, content: str, config: object = None
+    file_path: Path, content: str, config: object = None, **kwargs
 ) -> list[Finding]:
     findings: list[Finding] = []
-    sql_keywords = r"(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|GRANT)\b"
-    # f-string SQL
-    fstring_pattern = re.compile(rf'f["\'].*{sql_keywords}', re.IGNORECASE)
-    # .format() SQL
-    format_pattern = re.compile(rf'["\'].*{sql_keywords}.*["\']\.format\s*\(', re.IGNORECASE)
-    # % formatting SQL
-    percent_pattern = re.compile(rf'["\'].*{sql_keywords}.*%s.*["\']\s*%', re.IGNORECASE)
+    tree = kwargs.get("tree")
+    sql_keywords_re = re.compile(r"(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|GRANT)\b", re.IGNORECASE)
 
-    for i, line in enumerate(content.splitlines(), 1):
-        if line.strip().startswith("#"):
-            continue
-        if fstring_pattern.search(line) or format_pattern.search(line) or percent_pattern.search(line):
-            findings.append(
-                Finding(
-                    rule_id="PY-007",
-                    severity=Severity.HIGH,
-                    file_path=file_path,
-                    line_number=i,
-                    line_content=line.rstrip(),
-                    message="SQL query built with string formatting is vulnerable to SQL injection",
-                    cwe_id="CWE-89",
-                    fix_hint="Use parameterized queries: cursor.execute('SELECT * FROM t WHERE id=?', (id,))",
+    if tree:
+        # Semantic Analysis
+        # 1. Check f-strings and regular strings for SQL
+        query_fstring = "(string) @fstring"
+        from shipguard.semantic import SemanticEngine
+        matches = SemanticEngine.query(tree, query_fstring)
+        for _, match_captures in matches:
+            for node in match_captures.get("fstring", []):
+                text = content[node.start_byte : node.end_byte]
+                if sql_keywords_re.search(text):
+                    line_number = node.start_point[0] + 1
+                    line_content = content.splitlines()[line_number - 1]
+                    findings.append(
+                        Finding(
+                            rule_id="PY-007",
+                            severity=Severity.HIGH,
+                            file_path=file_path,
+                            line_number=line_number,
+                            line_content=line_content.rstrip(),
+                            message="SQL query built with f-string is vulnerable to SQL injection",
+                            cwe_id="CWE-89",
+                            fix_hint="Use parameterized queries: cursor.execute('SELECT * FROM t WHERE id=?', (id,))",
+                        )
+                    )
+
+        # 2. Check .format() calls
+        query_format = """
+        (call
+          function: (attribute
+            object: (string) @str
+            attribute: (identifier) @method)
+          (#eq? @method "format"))
+        """
+        matches = SemanticEngine.query(tree, query_format)
+        for _, match_captures in matches:
+            for node in match_captures.get("str", []):
+                text = content[node.start_byte : node.end_byte]
+                if sql_keywords_re.search(text):
+                    line_number = node.start_point[0] + 1
+                    line_content = content.splitlines()[line_number - 1]
+                    findings.append(
+                        Finding(
+                            rule_id="PY-007",
+                            severity=Severity.HIGH,
+                            file_path=file_path,
+                            line_number=line_number,
+                            line_content=line_content.rstrip(),
+                            message="SQL query built with .format() is vulnerable to SQL injection",
+                            cwe_id="CWE-89",
+                            fix_hint="Use parameterized queries: cursor.execute('SELECT * FROM t WHERE id=?', (id,))",
+                        )
+                    )
+    else:
+        # Fallback to Regex
+        sql_keywords = r"(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|GRANT)\b"
+        fstring_pattern = re.compile(rf'f["\'].*{sql_keywords}', re.IGNORECASE)
+        format_pattern = re.compile(rf'["\'].*{sql_keywords}.*["\']\.format\s*\(', re.IGNORECASE)
+        percent_pattern = re.compile(rf'["\'].*{sql_keywords}.*%s.*["\']\s*%', re.IGNORECASE)
+
+        for i, line in enumerate(content.splitlines(), 1):
+            if line.strip().startswith("#"):
+                continue
+            if fstring_pattern.search(line) or format_pattern.search(line) or percent_pattern.search(line):
+                findings.append(
+                    Finding(
+                        rule_id="PY-007",
+                        severity=Severity.HIGH,
+                        file_path=file_path,
+                        line_number=i,
+                        line_content=line.rstrip(),
+                        message="SQL query built with string formatting is vulnerable to SQL injection",
+                        cwe_id="CWE-89",
+                        fix_hint="Use parameterized queries: cursor.execute('SELECT * FROM t WHERE id=?', (id,))",
+                    )
                 )
-            )
     return findings
 
 
@@ -299,9 +455,7 @@ def py_007_sql_injection(
     cwe_id="CWE-502",
     compliance_tags=["SOC2-CC6.1"],
 )
-def py_008_pickle_load(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_008_pickle_load(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"\bpickle\.(?:load|loads)\s*\(")
     for i, line in enumerate(content.splitlines(), 1):
@@ -332,9 +486,7 @@ def py_008_pickle_load(
     cwe_id="CWE-377",
     compliance_tags=["SOC2-CC6.1"],
 )
-def py_009_tempfile_mktemp(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_009_tempfile_mktemp(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"\btempfile\.mktemp\s*\(")
     for i, line in enumerate(content.splitlines(), 1):
@@ -365,9 +517,7 @@ def py_009_tempfile_mktemp(
     cwe_id="CWE-78",
     compliance_tags=["SOC2-CC6.1", "PCI-6.5.1"],
 )
-def py_010_os_system(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_010_os_system(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"\bos\.system\s*\(")
     for i, line in enumerate(content.splitlines(), 1):
@@ -398,9 +548,7 @@ def py_010_os_system(
     cwe_id="CWE-338",
     compliance_tags=["SOC2-CC6.1"],
 )
-def py_011_insecure_random(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_011_insecure_random(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Only flag if the file imports `random` (not `secrets`)
     if "import random" not in content:
@@ -441,9 +589,7 @@ def py_011_insecure_random(
     cwe_id="CWE-377",
     compliance_tags=["SOC2-CC6.1"],
 )
-def py_012_tempfile_delete_false(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def py_012_tempfile_delete_false(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"NamedTemporaryFile\s*\([^)]*delete\s*=\s*False")
     for i, line in enumerate(content.splitlines(), 1):

@@ -11,7 +11,7 @@ from typing import Callable
 
 from shipguard.models import Finding, Severity
 
-# Type for a rule function: (file_path, content, config) -> list[Finding]
+# Type for a rule function: (file_path, content, **kwargs) -> list[Finding]
 RuleFunc = Callable[..., list[Finding]]
 
 

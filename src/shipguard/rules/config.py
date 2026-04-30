@@ -18,9 +18,7 @@ from shipguard.rules import register
     cwe_id="CWE-862",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4"],
 )
-def cfg_001_auto_approve(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def cfg_001_auto_approve(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Only check VS Code / IDE settings files
     name = file_path.name.lower()
@@ -60,9 +58,7 @@ def cfg_001_auto_approve(
     cwe_id="CWE-312",
     compliance_tags=["SOC2-CC6.1", "PCI-3.4"],
 )
-def cfg_002_env_committed(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def cfg_002_env_committed(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     name = file_path.name
     if not name.startswith(".env"):
@@ -101,9 +97,7 @@ def cfg_002_env_committed(
     cwe_id="CWE-942",
     compliance_tags=["SOC2-CC6.1"],
 )
-def cfg_003_permissive_cors(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def cfg_003_permissive_cors(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     patterns = [
         re.compile(r"""Access-Control-Allow-Origin['":\s]+\*""", re.IGNORECASE),
@@ -138,9 +132,7 @@ def cfg_003_permissive_cors(
     cwe_id="CWE-326",
     compliance_tags=["SOC2-CC6.1", "PCI-6.5.4"],
 )
-def cfg_004_weak_tls(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def cfg_004_weak_tls(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     patterns = [
         re.compile(r"\bSSLv[23]\b", re.IGNORECASE),
@@ -179,9 +171,7 @@ def cfg_004_weak_tls(
     cwe_id="CWE-732",
     compliance_tags=["SOC2-CC6.1", "PCI-2.2"],
 )
-def cfg_005_permissive_ssh(
-    file_path: Path, content: str, config: object = None
-) -> list[Finding]:
+def cfg_005_permissive_ssh(file_path: Path, content: str, config: object = None, **kwargs) -> list[Finding]:
     findings: list[Finding] = []
     # Only trigger for SSH config files
     name = file_path.name.lower()

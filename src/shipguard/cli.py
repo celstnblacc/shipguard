@@ -108,6 +108,11 @@ def scan_cmd(
         "--exclude-rules",
         help="Comma-separated rule IDs to exclude.",
     ),
+    ai_triage: bool = typer.Option(
+        False,
+        "--ai-triage",
+        help="Enable AI-driven false positive reduction.",
+    ),
     with_external: bool = typer.Option(
         False,
         "--with-external/--no-external",
@@ -119,6 +124,8 @@ def scan_cmd(
     config = load_config(config_path=config_file, target_dir=path)
     if rust_secrets is not None:
         config.use_rust_secrets = rust_secrets
+    if ai_triage:
+        config.ai_triage = True
 
     threshold = None
     if severity:
@@ -181,6 +188,53 @@ def scan_cmd(
 
     if result.findings:
         raise typer.Exit(code=1)
+
+
+@app.command("fix")
+def fix_cmd(
+    path: Path = typer.Argument(
+        ".", help="Directory to scan and fix.", exists=True, file_okay=False, resolve_path=True,
+    ),
+    id: str = typer.Option(
+        ..., "--id", help="The Rule ID to target for fixes (e.g., PY-003)."
+    ),
+    apply: bool = typer.Option(
+        False, "--apply", help="Actually write the fixes to the files instead of a dry run."
+    ),
+    config_file: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config file."
+    ),
+) -> None:
+    """Automatically generate and apply AI fixes for vulnerabilities."""
+    from shipguard.fixer import AutoFixer
+    
+    config = load_config(config_path=config_file, target_dir=path)
+    
+    # We only care about the target ID
+    load_builtin_rules()
+    load_custom_rules(_resolve_custom_rule_dirs(path, config.custom_rules_dirs))
+    
+    console.print(f"Scanning for {id} to apply fixes...")
+    result = scan(
+        target_dir=path,
+        config=config,
+        include_rules={id.upper()},
+    )
+    
+    if not result.findings:
+        console.print(f"[green]No findings for {id} found.[/green]")
+        raise typer.Exit(0)
+        
+    fixer = AutoFixer()
+    fixed_count = 0
+    for finding in result.findings:
+        if fixer.fix(finding, apply=apply):
+            fixed_count += 1
+            
+    if apply:
+        console.print(f"[green]Fixed {fixed_count} finding(s).[/green]")
+    else:
+        console.print(f"[yellow]Dry run completed. {fixed_count} finding(s) can be fixed. Run with --apply to apply.[/yellow]")
 
 
 @app.command("list-rules")

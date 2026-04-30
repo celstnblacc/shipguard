@@ -80,3 +80,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Docs
 - `CLAUDE.md`: refreshed for v0.3.2 — added Rust secrets crate, integrations
   module, SARIF formatter, full 35-file test suite, new CI workflows
+
+---
+
+## [0.4.0] — 2026-04-30
+
+### Added
+- **Semantic Engine:** Integration of Tree-sitter for AST-aware scanning in Python and JavaScript, reducing false positives.
+- **AI Triage (Layer 4):** Autonomous finding classification and reachability analysis using LiteLLM (Claude 3.5 Sonnet).
+- **AutoFixer:** Intelligent remediation engine with automated patch verification and rollback safety.
+- **MCP Server:** Native Model Context Protocol support for integration with AI agents like Claude Desktop and Cursor.
+- **Persistence:** SQLite-backed state tracking at `.shipguard/state.db` to remember triage decisions across scans.
+- **Rust Core:** High-performance multi-threaded engine for file discovery and rule dispatch.
+- **Agent Formats:** Token-optimized output format for AI agent consumption.
+
+### Changed
+- Refactored core engine to support semantic plugins and AI reasoning layers.
+- Expanded rule registry to 60 built-in security patterns.

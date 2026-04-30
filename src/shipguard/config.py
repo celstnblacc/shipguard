@@ -51,6 +51,7 @@ class Config(BaseModel):
     disable_rules: list[str] = Field(default_factory=list)
     custom_rules_dirs: list[str] = Field(default_factory=list)
     use_rust_secrets: bool = Field(default=False)
+    ai_triage: bool = Field(default=False)
     rule_config: dict[str, dict] = Field(default_factory=dict)
     external_tools: list[str] = Field(default_factory=list)
     trufflehog_verify: bool = Field(default=False)

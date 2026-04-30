@@ -50,6 +50,8 @@ class Finding:
     message: str
     cwe_id: str | None = None
     fix_hint: str | None = None
+    is_false_positive: bool = False
+    ai_triage_reason: str | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -61,6 +63,8 @@ class Finding:
             "message": self.message,
             "cwe_id": self.cwe_id,
             "fix_hint": self.fix_hint,
+            "is_false_positive": self.is_false_positive,
+            "ai_triage_reason": self.ai_triage_reason,
         }
 
 

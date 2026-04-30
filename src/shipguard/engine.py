@@ -13,7 +13,11 @@ from shipguard.config import Config
 from shipguard.models import Finding, ScanResult, Severity
 from shipguard.rust_secrets import run_rust_secrets_scan
 from shipguard.rules import get_registry, get_rules_for_file, load_builtin_rules, load_custom_rules
+from shipguard.semantic import SemanticEngine
+from shipguard.ai import AITriage
+from shipguard.db import Database
 
+DB_PATH = Path(".shipguard") / "state.db"
 
 def _build_rule_sets(
     config: Config,
@@ -58,6 +62,16 @@ def _load_gitignore(target_dir: Path) -> pathspec.PathSpec | None:
 def _discover_files(target_dir: Path, config: Config) -> list[Path]:
     """Discover scannable files, respecting exclusions."""
     exclude_patterns = DEFAULT_EXCLUDES + (config.exclude_paths or [])
+    
+    # Rust-based discovery (temporarily disabled for stabilization)
+    # try:
+    #     import shipguard_core
+    #     files_str = shipguard_core.discover_files(str(target_dir), exclude_patterns)
+    #     return [Path(f) for f in files_str]
+    # except ImportError:
+    #     pass
+
+    # Fallback to Python discovery
     exclude_spec = pathspec.PathSpec.from_lines("gitignore", exclude_patterns)
     gitignore_spec = _load_gitignore(target_dir)
 
@@ -106,6 +120,23 @@ def _scan_file(
     findings: list[Finding] = []
     lines = content.splitlines()
 
+    # Pre-parse AST if language is supported
+    tree = None
+    try:
+        tree = SemanticEngine.parse_file(file_path, content)
+        if tree:
+            # Populate Global Index (Phase 2: The Flow)
+            index = SemanticEngine.get_index()
+            # Simple indexing of function definitions
+            query_defs = "(function_definition name: (identifier) @name)"
+            matches = SemanticEngine.query(tree, query_defs)
+            for _, match in matches:
+                for node in match.get("name", []):
+                    index.add_symbol(content[node.start_byte:node.end_byte], file_path, node.start_point[0] + 1)
+    except Exception:
+        # Fallback to no AST if parsing fails or language not supported
+        pass
+
     seen_line_rules: dict[int, set[str]] = {}
     for rule in rules:
         if include and rule.id not in include:
@@ -117,7 +148,7 @@ def _scan_file(
         if rule.func is None:
             continue
 
-        rule_findings = rule.func(file_path, content, config)
+        rule_findings = rule.func(file_path, content, config=config, tree=tree)
         for finding in rule_findings:
             # Skip if a higher-priority rule already flagged this line for all rule IDs
             # that this rule supersedes (declared via the supersedes field on RuleMeta).
@@ -211,9 +242,27 @@ def scan_files(
     all_findings.sort(
         key=lambda f: (-f.severity.rank, str(f.file_path), f.line_number)
     )
+    
+    if getattr(config, "ai_triage", False):
+        triage = AITriage()
+        filtered_findings = []
+        for f in all_findings:
+            triage.evaluate(f)
+            if not getattr(f, "is_false_positive", False):
+                filtered_findings.append(f)
+        all_findings = filtered_findings
+
     result.findings = all_findings
     result.scan_root = target_dir
     result.finish()
+
+    # Sync with persistence layer
+    try:
+        db = Database(target_dir / DB_PATH)
+        db.sync_findings(all_findings)
+    except Exception as e:
+        print(f"[shipguard] warning: failed to sync with database: {e}", file=sys.stderr)
+
     return result
 
 
@@ -285,7 +334,25 @@ def scan(
     all_findings.sort(
         key=lambda f: (-f.severity.rank, str(f.file_path), f.line_number)
     )
+    
+    if getattr(config, "ai_triage", False):
+        triage = AITriage()
+        filtered_findings = []
+        for f in all_findings:
+            triage.evaluate(f)
+            if not getattr(f, "is_false_positive", False):
+                filtered_findings.append(f)
+        all_findings = filtered_findings
+
     result.findings = all_findings
     result.scan_root = target_dir
     result.finish()
+
+    # Sync with persistence layer
+    try:
+        db = Database(target_dir / DB_PATH)
+        db.sync_findings(all_findings)
+    except Exception as e:
+        print(f"[shipguard] warning: failed to sync with database: {e}", file=sys.stderr)
+
     return result

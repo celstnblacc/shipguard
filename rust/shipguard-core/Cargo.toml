@@ -1,0 +1,13 @@
+[package]
+name = "shipguard_core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "shipguard_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.21.0", features = ["extension-module"] }
+ignore = "0.4.22"
+rayon = "1.10.0"

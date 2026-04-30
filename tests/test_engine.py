@@ -91,8 +91,9 @@ from shipguard.rules import register
     description="Custom rule for tests",
     extensions=[".txt"],
 )
-def custom_rule(file_path, content, config=None):
+def custom_rule(file_path, content, config=None, **kwargs):
     findings = []
+
     for i, line in enumerate(content.splitlines(), 1):
         if "danger" in line:
             findings.append(
