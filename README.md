@@ -1,6 +1,6 @@
 # ShipGuard: The AI-Native Security Sentinel
 
-ShipGuard is an intelligent security sentinel designed to protect your repository from vulnerabilities through semantic analysis and AI reasoning. It moves beyond simple pattern matching by using Tree-sitter to understand the "intent" of your code, virtually eliminating false positives. With its built-in Layer 4 AI Triage, it automatically determines if a vulnerability is reachable or just dead code. The integrated Auto-Remediation engine can autonomously generate and apply secure code patches to fix findings on the fly. As an MCP-native tool, it serves as a security sense-organ for AI agents like Claude and Cursor, providing a high-performance Rust core for instantaneous workspace audits.
+ShipGuard is an intelligent security sentinel designed to protect your repository from vulnerabilities through semantic analysis and AI reasoning. It moves beyond simple pattern matching by using **Tree-sitter** to understand the "intent" of your code, virtually eliminating false positives. With its built-in **Layer 4 AI Triage**, it automatically determines if a vulnerability is reachable or just dead code. The integrated **Auto-Remediation** engine can autonomously generate and apply secure code patches to fix findings on the fly. As an **MCP-native** tool, it serves as a security sense-organ for AI agents like Claude and Cursor, providing a high-performance **Rust core** for instantaneous workspace audits.
 
 ## 🚀 The Sentinel Experience
 
@@ -25,7 +25,7 @@ python -m pip install shipguard
 ### Recommended: Using pipx (CLI tool)
 
 ```bash
-pipx install git+https://github.com/celstnblacc/shipguard.git
+pipx install shipguard
 ```
 
 This installs ShipGuard in an isolated environment with global command access.
@@ -43,7 +43,7 @@ pip install -e ".[dev]"
 ### In a project (virtual environment)
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/celstnblacc/shipguard.git"
+python3 -m venv .venv && source .venv/bin/activate && pip install shipguard
 ```
 
 ### Install from GitHub (correct URL syntax)
@@ -55,8 +55,7 @@ pip install "git+https://github.com/celstnblacc/shipguard.git"
 You can pin to a branch/tag/commit:
 
 ```bash
-pip install "git+https://github.com/celstnblacc/shipguard.git@main"
-pip install "git+https://github.com/celstnblacc/shipguard.git@efbd130"
+pip install "git+https://github.com/celstnblacc/shipguard.git@v0.4.0"
 ```
 
 After install:
@@ -82,8 +81,14 @@ source .venv/bin/activate && shipguard --version
 ## Quick Start
 
 ```bash
-# Scan current directory
-shipguard scan .
+# Scan current directory with AI Triage
+shipguard scan . --ai-triage
+
+# Automatically fix a finding
+shipguard fix --id PY-007 --apply
+
+# Start MCP server for AI agents
+shipguard-mcp
 
 # Scan another repository by absolute path
 shipguard scan /path/to/target-repo
@@ -100,26 +105,17 @@ shipguard scan . --rust-secrets
 # Only show critical and high findings
 shipguard scan . --severity high
 
-# Only show high+ findings for another repository
-shipguard scan /path/to/target-repo --severity high
-
 # Generate markdown report (for PR comments)
 shipguard scan . --format markdown --output report.md
 
-# List all 48 rules with descriptions
+# List all 60 rules with descriptions
 shipguard list-rules
 
 # Include only selected rules
 shipguard scan . --include-rules PY-003,SEC-001
 
-# Exclude noisy rules for a run
-shipguard scan . --exclude-rules JS-008,PY-009
-
 # Create a config file
 shipguard init
-
-# Create a config file in another repository
-shipguard init /path/to/target-repo
 ```
 
 ### Sample Terminal Output
@@ -127,7 +123,7 @@ shipguard init /path/to/target-repo
 ```
 ShipGuard Scan Results
 ──────────────────────────────────────────────────────
-  Files scanned : 42      Rules applied : 48
+  Files scanned : 42      Rules applied : 60
   Findings      : 3       Files skipped : 0
   Duration      : 0.21s
 ──────────────────────────────────────────────────────
@@ -198,30 +194,30 @@ Ownership:
 
 ShipGuard implements a **unified security model** across all 7 layers of the software development lifecycle:
 
-| Layer | Focus | ShipGuard Rules | External Tools |
+| Layer | Focus | ShipGuard Capability | External Tools |
 |-------|-------|---------------|---|
 | **L1: Dependencies** | Vulnerable packages | — | pip-audit, npm audit, osv-scanner |
 | **L2: Secrets** | Credential exposure | SEC-001–010 (10) | gitleaks, detect-secrets |
-| **L3: SAST** | Code vulnerabilities | 34 rules | ShellCheck, Bandit, ESLint |
-| **L4: AI Reasoning** | Semantic analysis | — | Claude, GPT-4, human architects |
+| **L3: SAST** | Code vulnerabilities | **Semantic Engine (Tree-sitter)** | ShellCheck, Bandit, ESLint |
+| **L4: AI Reasoning** | Autonomous Triage | **Layer 4 AI Triage (--ai-triage)** | LiteLLM, Claude 3.5, GPT-4o |
 | **L5: DAST** | Runtime vulnerabilities | — | OWASP ZAP, Burp Suite |
 | **L6: Supply Chain** | Build integrity | SC-001–004 (4) | Sigstore, Cosign |
-| **L7: Observability** | Production monitoring | — | SIEM, Datadog, PagerDuty |
+| **L7: Observability** | Production monitoring | **SQLite Persistence Layer** | SIEM, Datadog, PagerDuty |
 
 **See [docs/PIPELINE.md](./docs/PIPELINE.md) for complete framework details.**
 
 ---
 
-## Rules (48 total)
+## Rules (60 total)
 
 | Category | Layer | Count | IDs | Examples |
 |----------|-------|-------|-----|----------|
 | Shell | L3 | 9 | SHELL-001–009 | eval injection, unquoted vars, bash -c interpolation |
-| Python | L3 | 9 | PY-001–009 | zip slip, yaml.load, eval/exec, SQL injection |
-| JavaScript | L3 | 8 | JS-001–008 | eval, path traversal, prototype pollution, XSS |
+| Python | L3 | 12 | PY-001–012 | zip slip, yaml.load, eval/exec, SQL injection, temp files |
+| JavaScript | L3 | 12 | JS-001–012 | eval, path traversal, prototype pollution, XSS, dangerous methods |
 | GitHub Actions | L3 | 5 | GHA-001–005 | workflow injection, unpinned actions, secrets in logs |
 | Config | L3 | 3 | CFG-001–003 | auto-approve, committed .env, permissive CORS |
-| **Secrets** | **L2** | **10** | **SEC-001–010** | **Cloud/API tokens and other hardcoded secret patterns** |
+| **Secrets** | **L2** | **15** | **SEC-001–015** | **Cloud/API tokens and other hardcoded secret patterns** |
 | **Supply Chain** | **L6** | **4** | **SC-001–004** | **Docker :latest, unpinned deps, npm lockfiles, missing .gitignore entries** |
 
 Run `shipguard list-rules` or `shipguard list-rules --format json` for full details.
@@ -261,6 +257,9 @@ Create `.shipguard.yml` in your project root (or run `shipguard init`):
 ```yaml
 # Minimum severity to report: critical, high, medium, low
 severity_threshold: medium
+
+# Enable AI-driven false positive reduction by default
+ai_triage: true
 
 # Glob patterns for paths to exclude
 exclude_paths:
@@ -324,6 +323,7 @@ eval $cmd  # shipguard:ignore SHELL-001, SHELL-002
 - **terminal** (default) — Rich color-coded table with severity highlighting and fix hints
 - **json** — Machine-readable `{"findings": [...], "summary": {...}}` for CI integration
 - **markdown** — Report grouped by severity level, suitable for PR comments
+- **agent** — Token-optimized output for AI agent consumption (Claude/Gemini)
 
 ## CI Integration
 
@@ -333,7 +333,7 @@ eval $cmd  # shipguard:ignore SHELL-001, SHELL-002
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/celstnblacc/shipguard
-    rev: main
+    rev: v0.4.0
     hooks:
       - id: shipguard
 ```
@@ -341,7 +341,7 @@ repos:
 ### GitHub Action
 
 ```yaml
-- uses: celstnblacc/shipguard@main
+- uses: celstnblacc/shipguard@v0.4.0
   with:
     severity: medium
     format: terminal
@@ -427,13 +427,14 @@ eval $cmd  # shipguard:ignore SHELL-001, SHELL-002
 
 ## About This Project
 
-ShipGuard implements a **7-layer unified security framework** integrated into a single SAST tool. It was developed to package 48 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
+ShipGuard implements a **7-layer unified security framework** integrated into a single SAST tool. It was developed to package 60 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
 
 ShipGuard provides:
-- **Layer 3 (SAST)**: 34 rules across command injection, path traversal, code injection, and configuration issues
-- **Layer 2 (Secrets)**: 10 rules detecting cloud/API credentials and token patterns
+- **Layer 3 (SAST)**: 48 rules across command injection, path traversal, code injection, and configuration issues
+- **Layer 2 (Secrets)**: 15 rules detecting cloud/API credentials and token patterns
 - **Layer 6 (Supply Chain)**: 4 rules checking Docker image pinning, dependency pinning, and `.gitignore` secret baselines
-- **Integration**: GitHub Actions workflow, pre-commit hooks, local Makefile targets
+- **Layer 4 (AI Reasoning)**: Autonomous triage and reachability analysis using LiteLLM
+- **Integration**: GitHub Actions workflow, pre-commit hooks, MCP server for AI agents
 
 **See [docs/7_LAYER_SECURITY_MODEL.md](./docs/7_LAYER_SECURITY_MODEL.md) for the complete security framework.**
 
@@ -501,9 +502,10 @@ from shipguard.rules import register
     extensions=[".py"],
     cwe_id="CWE-123"
 )
-def rule_001_check(file_path, content, config=None):
+def rule_001_check(file_path, content, config=None, **kwargs):
     findings = []
     # Detection logic here
+    # Use kwargs.get("tree") for Tree-sitter AST if available
     return findings
 ```
 
