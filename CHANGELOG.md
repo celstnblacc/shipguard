@@ -97,3 +97,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - Refactored core engine to support semantic plugins and AI reasoning layers.
 - Expanded rule registry to 60 built-in security patterns.
+
+## [Unreleased]
+### Security
+- Bump `litellm` to `>=1.83.7` to cover CVE-2026-42208 (pre-auth SQLi) and CVE-2026-42203 (SSTI). ShipGuard uses the SDK only; not exploitable, hygiene bump.
