@@ -101,3 +101,4 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 ### Security
 - Bump `litellm` to `>=1.83.7` to cover CVE-2026-42208 (pre-auth SQLi) and CVE-2026-42203 (SSTI). ShipGuard uses the SDK only; not exploitable, hygiene bump.
+- 2026-05-18: chore(release): bump to v0.4.1 (litellm >=1.83.7 for CVE-2026-42208/42203 hygiene)
